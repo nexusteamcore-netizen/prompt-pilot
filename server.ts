@@ -1,7 +1,6 @@
 console.log(">>> SERVER SCRIPT STARTED <<<");
 import "dotenv/config";
 import express from "express";
-import { createServer as createViteServer } from "vite";
 import Stripe from "stripe";
 import jwt from "jsonwebtoken";
 import cors from "cors";
@@ -423,20 +422,33 @@ app.post("/api/stripe/checkout", authenticate, async (req, res) => {
 // Serve the extension files
 app.use("/extension", express.static("public/extension"));
 
+export default app;
+
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
-    app.use(express.static("dist"));
+    // In production (like on a VPS), serve static files from dist
+    // Note: On Vercel, static files are handled as a static site automatically.
+    if (!process.env.VERCEL) {
+      app.use(express.static("dist"));
+    }
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+  // Only listen if we're not running as a serverless function (like on Vercel)
+  if (!process.env.VERCEL) {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  }
 }
 
-startServer();
+// Start the server process only when NOT on Vercel (where Vercel handles invocation)
+if (!process.env.VERCEL) {
+  startServer();
+}

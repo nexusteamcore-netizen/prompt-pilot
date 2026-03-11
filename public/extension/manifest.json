@@ -1,0 +1,44 @@
+{
+    "manifest_version": 3,
+    "name": "PromptPilot",
+    "version": "1.0",
+    "description": "Enhance your AI prompts with one click.",
+    "permissions": [
+        "storage",
+        "activeTab",
+        "scripting"
+    ],
+    "host_permissions": [
+        "https://chatgpt.com/*",
+        "https://claude.ai/*",
+        "https://gemini.google.com/*",
+        "https://www.perplexity.ai/*",
+        "https://grok.x.ai/*",
+        "http://localhost:3000/*"
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "https://chatgpt.com/*",
+                "https://claude.ai/*",
+                "https://gemini.google.com/*",
+                "https://www.perplexity.ai/*",
+                "https://grok.x.ai/*",
+                "http://localhost:3000/*"
+            ],
+            "js": [
+                "sync.js",
+                "content.js"
+            ],
+            "css": [
+                "styles/content.css"
+            ]
+        }
+    ],
+    "action": {
+        "default_popup": "popup.html"
+    }
+}

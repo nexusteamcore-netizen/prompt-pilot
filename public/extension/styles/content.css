@@ -1,0 +1,112 @@
+/* content.css - Premium Startup Brand Badge */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+.pp-enhance-btn {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  background: #0c0a09;
+  /* Deep stone black */
+  color: #f5f5f4;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  /* Soft app-icon corners (slightly larger) */
+  width: 48px;
+  height: 48px;
+  cursor: grab;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  z-index: 2147483647 !important;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.8) translateY(10px);
+  position: fixed;
+  user-select: none;
+}
+
+.pp-enhance-btn:hover {
+  opacity: 1;
+  transform: translateY(-2px) scale(1.05);
+  border-color: rgba(167, 139, 250, 0.5);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.6), 0 0 20px rgba(139, 92, 246, 0.15);
+}
+
+.pp-enhance-btn:active {
+  cursor: grabbing;
+  transform: scale(0.95);
+}
+
+.pp-enhance-btn svg {
+  width: 24px;
+  height: 24px;
+  color: #ffffff;
+  /* Pure white rocket */
+  transition: color 0.3s ease;
+}
+
+.pp-enhance-btn:hover svg {
+  color: #ffffff;
+  /* Keep pure white on hover too */
+}
+
+
+/* Enhancing State */
+.pp-enhance-btn.enhancing {
+  pointer-events: none;
+  background: #1c1917;
+}
+
+.pp-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(167, 139, 250, 0.2);
+  border-top-color: #a78bfa;
+  border-radius: 50%;
+  animation: pp-spin 0.8s linear infinite;
+}
+
+@keyframes pp-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Success/Error Feedback - Minimal & Non-Obtrusive */
+.pp-feedback-pop {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #10b981;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: fadeOut 2s forwards;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes fadeOut {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(5px);
+  }
+
+  15% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  85% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-5px);
+  }
+}

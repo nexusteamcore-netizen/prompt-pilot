@@ -175,20 +175,46 @@ app.post("/api/transform", authenticate, async (req, res) => {
     const userId = (req as any).user?.sub || (req as any).user?.id;
     const authHeader = req.headers.authorization;
 
-    // Run usage check in parallel with AI call for speed
+    // Run usage check and profile check in parallel with AI call for speed
     const supabase = getSupabaseClient(authHeader);
     const today = new Date().toISOString().split('T')[0];
+    
+    // Get both profile (for plan) and usage logs
+    const profilePromise = supabase.from('profiles').select('plan').eq('id', userId).single();
     const usageCheckPromise = supabase
       .from('usage_logs')
       .select('count')
       .eq('user_id', userId)
-      .eq('date', today)
-      .single();
+      .eq('date', today);
 
-    const systemInstruction = `You are a prompt engineer. Rewrite the user's input as a clear, structured AI prompt.
-Mode: ${mode || "professional"}. Output ONLY the improved prompt, nothing else.`;
+    const modeDefinitions: Record<string, string> = {
+      professional: "Formal, balanced, and business-focused. Ideal for workplace communication and standard AI tasks.",
+      creative: "Imaginative and expressive. Encourages the AI to explore metaphors, storytelling, and non-linear thinking.",
+      technical: "Precise, spec-heavy, and logical. Focuses on code, architecture, data, and rigorous constraints.",
+      academic: "Scholarly and analytical. Uses high-level vocabulary, objective tone, and structure suitable for research.",
+      simple: "Clear, plain English, and accessible. Strips away jargon to focus on the most direct and easy-to-understand response.",
+      detailed: "Exhaustive and multi-layered. Breaks the task into many sub-components for a comprehensive result.",
+      concise: "Ultra-brief and efficient. No fluff, only the essential instructions in the shortest possible form.",
+      friendly: "Warm, approachable, and encouraging. Uses a supportive tone while maintaining task clarity.",
+      direct: "No-nonsense and assertive. Commands the AI with maximum authority and zero pleasantries."
+    };
 
-    const modelName = "google/gemini-2.0-flash-lite"; // Fastest available model
+    const systemInstruction = `You are PromptPilot, an elite AI prompt engineer. Your mission is to transform casual, rough, or vague user inputs into ultra-powerful prompts using the "Prompt Engineering Framework".
+
+MODE DEFINITION:
+- Current Mode: ${mode || "professional"}
+- Guidelines for this mode: ${modeDefinitions[mode || "professional"] || modeDefinitions.professional}
+
+Every prompt you generate MUST follow the 10-point Framework:
+1. Context Setting | 2. Role Assignment | 3. Task Definition | 4. Scope/Constraints | 5. Output Format | 6. Input Data | 7. Few-Shot Examples | 8. Reasoning Instructions | 9. Quality Criteria | 10. Validation
+
+Output Guidelines:
+- Output ONLY the final transformed prompt.
+- Ensure the prompt is structured, professional, and reflects the ${mode || "professional"} style perfectly.
+- Match the Additional Context: ${context || "general"}
+`;
+
+    const modelName = "google/gemini-2.0-flash-001"; // Switching back to proven model
 
     if (!OPENROUTER_API_KEY) {
       return res.status(500).json({ error: "API key not configured" });
@@ -209,24 +235,37 @@ Mode: ${mode || "professional"}. Output ONLY the improved prompt, nothing else.`
           { role: "system", content: systemInstruction },
           { role: "user", content: text }
         ],
-        temperature: 0.4,
-        max_tokens: 600
+        temperature: 0.7,
+        max_tokens: 800
       })
     });
 
-    // Resolve both in parallel
-    const [usageResult, aiResponse] = await Promise.all([usageCheckPromise, aiPromise]);
+    // Resolve everything in parallel
+    const [profileResult, usageResult, aiResponse] = await Promise.all([
+      profilePromise,
+      usageCheckPromise,
+      aiPromise
+    ]);
 
-    // Check usage limit
-    const currentUsage = usageResult.data?.count || 0;
-    if (currentUsage >= 20) {
-      return res.status(429).json({ error: "Daily limit reached. Upgrade to Pro." });
+    // Check plan and usage limit
+    const plan = profileResult.data?.plan || 'free';
+    const limit = plan === 'pro' ? 500 : (plan === 'team' ? 1000 : 20);
+    const currentUsage = usageResult.data?.[0]?.count || 0;
+
+    if (currentUsage >= limit) {
+      return res.status(429).json({ 
+        error: "Daily limit reached.", 
+        details: plan === 'free' ? "Upgrade to Pro for more daily transforms." : "You have reached your high-volume daily limit."
+      });
     }
 
     if (!aiResponse.ok) {
-      const errText = await aiResponse.text();
-      console.error("OpenRouter HTTP error:", aiResponse.status, errText);
-      return res.status(500).json({ error: `AI service error: ${aiResponse.status}` });
+      const errJson = await aiResponse.json().catch(() => ({}));
+      console.error("❌ OpenRouter 400 Error Details:", JSON.stringify(errJson, null, 2));
+      return res.status(500).json({
+        error: `AI service error: ${aiResponse.status}`,
+        details: errJson.error?.message || "Check server logs"
+      });
     }
 
     const data = await aiResponse.json();
@@ -243,8 +282,9 @@ Mode: ${mode || "professional"}. Output ONLY the improved prompt, nothing else.`
 
     console.log(`✅ Done in model: ${modelName} | Length: ${transformed.length}`);
 
-    // Update usage in background (don't await — keeps response fast)
-    const upsertUsage = usageResult.data
+    // Update usage in background
+    const hasUsageEntry = usageResult.data && usageResult.data.length > 0;
+    const upsertUsage = hasUsageEntry
       ? supabase.from('usage_logs').update({ count: currentUsage + 1 }).eq('user_id', userId).eq('date', today)
       : supabase.from('usage_logs').insert({ user_id: userId, date: today, count: 1 });
 
@@ -263,7 +303,7 @@ Mode: ${mode || "professional"}. Output ONLY the improved prompt, nothing else.`
     res.json({
       transformed,
       tokensUsed: 0,
-      creditsRemaining: 20 - (currentUsage + 1)
+      creditsRemaining: limit - (currentUsage + 1)
     });
 
   } catch (error: any) {

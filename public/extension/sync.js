@@ -22,16 +22,19 @@ function syncLatestToken() {
                             safeStorageSet({
                                 pp_token: data.access_token,
                                 pp_base_url: window.location.origin
-                            }, () => {
-                                console.log("PromptPilot: Token synced from localStorage!");
                             });
-                            break;
                         }
                     }
                 } catch (e) {
                     console.error("PromptPilot Sync Error:", e);
                 }
             }
+        }
+
+        // Also sync mode if exists
+        const mode = localStorage.getItem("pp_mode");
+        if (mode) {
+            safeStorageSet({ pp_mode: mode });
         }
     }
 }
@@ -51,5 +54,15 @@ window.addEventListener("message", (event) => {
         }, () => {
             console.log("PromptPilot: Token synced via message!", { url: finalBaseUrl });
         });
+    }
+
+    // Listen for settings updates
+    if (event && event.data && event.data.type === "PP_SETTINGS") {
+        const { mode } = event.data;
+        if (mode) {
+            safeStorageSet({ pp_mode: mode }, () => {
+                console.log("PromptPilot: Mode synced via message!", mode);
+            });
+        }
     }
 });

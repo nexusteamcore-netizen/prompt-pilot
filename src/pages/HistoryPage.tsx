@@ -21,7 +21,11 @@ const itemVariants = {
 
 export default function HistoryPage() {
   const [history, setHistory] = useState<any[]>([]);
+  const [filteredHistory, setFilteredHistory] = useState<any[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedMode, setSelectedMode] = useState<string>("All");
+  const [isExporting, setIsExporting] = useState(false);
 
   const { session } = useAuth();
 
@@ -31,17 +35,86 @@ export default function HistoryPage() {
     fetch("/api/history", {
       headers: { "Authorization": `Bearer ${session.access_token}` }
     })
-      .then(res => res.json())
+      .then(async res => {
+        if (res.status === 401) {
+          toast.error("Session expired. Please sign in again.");
+          return { history: [] };
+        }
+        return res.json();
+      })
       .then(data => {
-        if (data.history) {
+        if (data && data.history) {
           setHistory(data.history);
+          setFilteredHistory(data.history);
         } else {
-          console.error("Failed to fetch history:", data);
           setHistory([]);
+          setFilteredHistory([]);
         }
       })
-      .catch(console.error);
-  }, []);
+      .catch(err => {
+        console.error("Fetch history error:", err);
+        toast.error("Failed to load history items.");
+      });
+  }, [session]);
+
+  // Handle Search and Filter
+  useEffect(() => {
+    let result = [...history];
+
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(item =>
+        item.original_text.toLowerCase().includes(query) ||
+        item.transformed_text.toLowerCase().includes(query)
+      );
+    }
+
+    if (selectedMode !== "All") {
+      result = result.filter(item => item.mode.toLowerCase() === selectedMode.toLowerCase());
+    }
+
+    setFilteredHistory(result);
+  }, [searchQuery, selectedMode, history]);
+
+  const exportToCSV = () => {
+    if (history.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      const headers = ["Date", "Mode", "Original Context", "Original Text", "Transformed Text"];
+      const rows = history.map(item => [
+        new Date(item.created_at).toLocaleString(),
+        item.mode,
+        item.context || "N/A",
+        `"${item.original_text.replace(/"/g, '""')}"`,
+        `"${item.transformed_text.replace(/"/g, '""')}"`
+      ]);
+
+      const csvContent = [
+        headers.join(","),
+        ...rows.map(row => row.join(","))
+      ].join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `promptpilot_history_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success("History exported successfully!");
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error("Failed to export CSV");
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -53,6 +126,7 @@ export default function HistoryPage() {
 
     // Optimistic UI update
     setHistory(prev => prev.filter(item => item.id !== id));
+    setFilteredHistory(prev => prev.filter(item => item.id !== id));
     toast.success("Item deleted");
 
     try {
@@ -86,8 +160,13 @@ export default function HistoryPage() {
           <h1 className="text-3xl font-semibold text-stone-100 tracking-tight mb-2">Prompt History</h1>
           <p className="text-stone-400">Review and reuse your previously enhanced prompts.</p>
         </div>
-        <button className="flex items-center gap-2 text-sm font-medium text-stone-300 bg-stone-900/50 border border-stone-800 hover:bg-stone-800 hover:text-stone-100 px-4 py-2.5 rounded-xl transition-all shadow-sm active:scale-95">
-          <Download className="w-4 h-4" /> Export CSV
+        <button 
+          onClick={exportToCSV}
+          disabled={isExporting || history.length === 0}
+          className="flex items-center gap-2 text-sm font-medium text-stone-300 bg-stone-900/50 border border-stone-800 hover:bg-stone-800 hover:text-stone-100 px-4 py-2.5 rounded-xl transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isExporting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+          {isExporting ? "Exporting..." : "Export CSV"}
         </button>
       </motion.div>
 
@@ -99,12 +178,24 @@ export default function HistoryPage() {
             <input
               type="text"
               placeholder="Search your prompts..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-stone-900/50 border border-stone-800/80 rounded-xl pl-11 pr-4 py-3 text-sm text-stone-200 focus:outline-none focus:ring-2 focus:ring-stone-700 focus:border-transparent transition-all placeholder:text-stone-600 shadow-inner"
             />
           </div>
-          <button className="flex items-center justify-center gap-2 text-sm font-medium text-stone-300 bg-stone-900/50 border border-stone-800/80 hover:bg-stone-800 hover:text-stone-100 px-6 py-3 rounded-xl transition-all shadow-sm active:scale-95">
-            <Filter className="w-4 h-4" /> Filter
-          </button>
+          <div className="flex gap-2">
+            <select 
+              value={selectedMode}
+              onChange={(e) => setSelectedMode(e.target.value)}
+              className="bg-stone-900/50 border border-stone-800/80 text-stone-300 text-sm rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-stone-700 transition-all appearance-none cursor-pointer"
+            >
+              <option value="All">All Modes</option>
+              <option value="Professional">Professional</option>
+              <option value="Creative">Creative</option>
+              <option value="Technical">Technical</option>
+              <option value="Concise">Concise</option>
+            </select>
+          </div>
         </div>
 
         {/* Table */}
@@ -119,7 +210,7 @@ export default function HistoryPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-800/30">
-              {history.map((item, idx) => (
+              {filteredHistory.map((item, idx) => (
                 <React.Fragment key={item.id}>
                   <motion.tr
                     initial={{ opacity: 0, y: 10 }}
@@ -195,12 +286,12 @@ export default function HistoryPage() {
                   )}
                 </React.Fragment>
               ))}
-              {history.length === 0 && (
+              {filteredHistory.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center justify-center text-stone-500">
                       <BrandIcon className="w-8 h-8 mb-3 text-stone-700" />
-                      <p>No history found.</p>
+                      <p>{searchQuery || selectedMode !== "All" ? "No results found for your search." : "No history found."}</p>
                       <p className="text-xs mt-1 text-stone-600">Your enhanced prompts will appear here.</p>
                     </div>
                   </td>

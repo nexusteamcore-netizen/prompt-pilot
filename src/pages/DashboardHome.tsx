@@ -65,14 +65,8 @@ export default function DashboardHome() {
   const handleTransform = async () => {
     if (!inputText.trim()) return;
 
-    // Hidden "Demo" trick for the user to see the UI
-    if (inputText.toLowerCase().trim() === "demo") {
-      setIsTransforming(true);
-      setTimeout(() => {
-        setTransformedText("This is a premium crafted prompt example. It highlights how the new result area looks with the emerald glow, the copy button, and the refined typography we just built for the PromptPilot studio experience.");
-        setIsTransforming(false);
-        toast.success("Demo prompt generated!");
-      }, 1500);
+    if (!session) {
+      toast.error("Your session has expired. Please log in again.");
       return;
     }
 
@@ -84,18 +78,34 @@ export default function DashboardHome() {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${session?.access_token}`
         },
-        body: JSON.stringify({ text: inputText, mode: activeMode.toLowerCase() })
+        body: JSON.stringify({ 
+          text: inputText, 
+          mode: activeMode.toLowerCase(),
+          context: "web-studio" // Track where it came from
+        })
       });
+
       const data = await res.json();
+
+      if (res.status === 401) {
+        toast.error("Session expired. Please sign in again.");
+        return;
+      }
+
+      if (res.status === 429) {
+        toast.error("Daily limit reached! Upgrade to Pro for unlimited access.");
+        return;
+      }
+
       if (res.ok) {
         setTransformedText(data.transformed);
         setUsage(prev => ({ ...prev, used: prev.used + 1 }));
         toast.success("Prompt enhanced successfully!");
       } else {
-        toast.error(data.error || "Transformation failed");
+        toast.error(data.error || "Transformation failed. Please try a different prompt.");
       }
     } catch (err) {
-      toast.error("Connection error. Please try again.");
+      toast.error("Network error. Please check your connection and try again.");
       console.error(err);
     } finally {
       setIsTransforming(false);

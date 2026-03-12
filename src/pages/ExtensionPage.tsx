@@ -89,6 +89,10 @@ export default function ExtensionPage() {
               <ul className="space-y-4 text-sm text-stone-300">
                 <li className="flex gap-3">
                   <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                  <span><b>CRITICAL:</b> Visit your <Link to="/dashboard" className="underline font-bold">Dashboard</Link> once after installing to sync your account.</span>
+                </li>
+                <li className="flex gap-3">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
                   <span>After installation, <b>Refresh</b> ChatGPT or Claude to see the Enhance button.</span>
                 </li>
                 <li className="flex gap-3">

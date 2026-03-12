@@ -47,13 +47,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           type: "PP_AUTH_TOKEN",
           token: session.access_token,
           baseUrl: window.location.origin
-        }, window.location.origin);
+        }, "*");
       } else if (_event === 'SIGNED_OUT') {
         window.postMessage({
           type: "PP_AUTH_TOKEN",
           token: null,
           baseUrl: window.location.origin
-        }, window.location.origin);
+        }, "*");
       }
     });
 

@@ -9,13 +9,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // 1. Initialize Client
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true
-  }
-});
+export const supabase = (supabaseUrl && supabaseAnonKey) 
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    })
+  : null as any; // Fallback to null to prevent crash, check for usage in hooks
 
 // 2. Export Helper Types (Optional but helpful)
 export type Database = {

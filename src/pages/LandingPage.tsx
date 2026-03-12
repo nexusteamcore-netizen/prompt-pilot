@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Rocket, Zap, Target, Globe, Shield, History, SlidersHorizontal, Check, ArrowRight, PlayCircle, Bot, Brain, Cpu, Aperture, Code, PenTool, LineChart } from "lucide-react";
-import { motion, Variants } from "framer-motion";
+import { Menu, X, Rocket, Zap, Target, Globe, Shield, History, SlidersHorizontal, Check, ArrowRight, PlayCircle, Bot, Brain, Cpu, Aperture, Code, PenTool, LineChart } from "lucide-react";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 import { BrandIcon } from "../components/BrandIcon";
 
 export default function LandingPage() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
+  // ... rest of variants
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
@@ -21,6 +24,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen text-zinc-400 overflow-x-hidden selection:bg-zinc-800 selection:text-white">
       {/* Background Spline */}
+      {/* ... iframe code ... */}
       <div className="fixed top-0 w-full h-screen -z-10" style={{ maskImage: 'linear-gradient(to bottom, transparent, black 0%, black 80%, transparent)', WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 0%, black 80%, transparent)' }}>
         <div className="absolute top-0 left-0 w-full h-full z-0 pointer-events-none">
           <iframe src="https://my.spline.design/glowingplanetparticles-HmCVKutonlFn3Oqqe6DI9nWi/" frameBorder="0" width="100%" height="100%"></iframe>
@@ -43,7 +47,7 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-4">
-            <Link to="/login" className="text-sm font-medium hover:text-stone-100 transition-colors">
+            <Link to="/login" className="hidden sm:block text-sm font-medium hover:text-stone-100 transition-colors">
               Sign In
             </Link>
             <button
@@ -56,8 +60,45 @@ export default function LandingPage() {
               Add to Chrome — Free
               <ArrowRight className="w-4 h-4" />
             </button>
+            <button 
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="md:hidden p-2 text-stone-400 hover:text-stone-100 transition-colors"
+            >
+              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Menu */}
+        <AnimatePresence>
+          {isMenuOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="md:hidden border-t border-stone-800/50 bg-stone-950/95 backdrop-blur-xl overflow-hidden"
+            >
+              <div className="flex flex-col p-6 space-y-4">
+                <a href="#features" onClick={() => setIsMenuOpen(false)} className="text-stone-400 hover:text-stone-100 font-medium transition-colors">Features</a>
+                <a href="#how-it-works" onClick={() => setIsMenuOpen(false)} className="text-stone-400 hover:text-stone-100 font-medium transition-colors">How It Works</a>
+                <a href="#use-cases" onClick={() => setIsMenuOpen(false)} className="text-stone-400 hover:text-stone-100 font-medium transition-colors">Use Cases</a>
+                <a href="#pricing" onClick={() => setIsMenuOpen(false)} className="text-stone-400 hover:text-stone-100 font-medium transition-colors">Pricing</a>
+                <hr className="border-stone-800/50 my-2" />
+                <Link to="/login" className="text-stone-400 hover:text-stone-100 font-medium transition-colors">Sign In</Link>
+                <button
+                  onClick={() => {
+                    sessionStorage.setItem('redirectToExtension', 'true');
+                    navigate('/login');
+                  }}
+                  className="w-full flex items-center justify-center gap-2 bg-stone-100 text-stone-950 font-bold py-3 rounded-xl shadow-sm active:scale-95"
+                >
+                  Add to Chrome — Free
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
 
       <main className="pt-32 pb-20 relative">

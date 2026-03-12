@@ -126,28 +126,28 @@ export default function DashboardHome() {
       animate="show"
       className="max-w-5xl mx-auto pt-8"
     >
-      <motion.header variants={itemVariants} className="mb-10">
-        <h1 className="text-3xl font-semibold text-stone-100 tracking-tight mb-2">
+      <motion.header variants={itemVariants} className="mb-6 md:mb-10 text-center md:text-left">
+        <h1 className="text-2xl md:text-3xl font-semibold text-stone-100 tracking-tight mb-2">
           Welcome back, {session?.user?.email?.split('@')[0] || "Pilot"}
         </h1>
-        <p className="text-stone-400">Here's what's happening with your prompts today.</p>
+        <p className="text-sm md:text-base text-stone-400">Here's what's happening today.</p>
       </motion.header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8 items-start">
 
         {/* Quick Transform - Main Focus */}
-        <motion.div variants={itemVariants} className="lg:col-span-8 bg-stone-900/40 border border-stone-800/80 p-1 rounded-3xl relative group overflow-hidden">
+        <motion.div variants={itemVariants} className="lg:col-span-8 bg-stone-900/40 border border-stone-800/80 p-0.5 md:p-1 rounded-3xl relative group overflow-hidden">
           {/* Subtle animated gradient background */}
           <div className="absolute inset-0 bg-gradient-to-br from-stone-800/20 via-transparent to-stone-900/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
 
-          <div className="bg-stone-950/50 backdrop-blur-xl rounded-[22px] p-6 relative z-10 h-full flex flex-col">
-            <div className="flex items-center justify-between mb-6">
+          <div className="bg-stone-950/50 backdrop-blur-xl rounded-[22px] p-4 md:p-6 relative z-10 h-full flex flex-col">
+            <div className="flex flex-col sm:flex-row items-center justify-between mb-6 gap-4">
               <h2 className="text-sm font-medium text-stone-300 flex items-center gap-2 uppercase tracking-wider">
                 <BrandIcon className="w-4 h-4 text-stone-400" /> Studio
               </h2>
 
               {/* Mode Selector */}
-              <div className="flex bg-stone-900/80 rounded-lg p-1 border border-stone-800/50">
+              <div className="flex bg-stone-900/80 rounded-lg p-1 border border-stone-800/50 overflow-x-auto max-w-full">
                 {modes.map(mode => (
                   <button
                     key={mode}

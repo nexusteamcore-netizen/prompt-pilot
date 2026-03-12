@@ -21,7 +21,11 @@
       "destination": "/extension/$1"
     },
     {
-      "source": "/(.*)",
+      "source": "/assets/(.*)",
+      "destination": "/assets/$1"
+    },
+    {
+      "source": "/((?!api|extension|assets|favicon.ico).* )",
       "destination": "/index.html"
     }
   ]

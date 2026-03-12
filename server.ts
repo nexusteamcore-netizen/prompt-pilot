@@ -1,8 +1,4 @@
 console.log(">>> SERVER SCRIPT STARTED <<<");
-// Only load dotenv in local development
-if (process.env.NODE_ENV !== "production") {
-  await import("dotenv/config").catch(() => console.log("No .env file found"));
-}
 import express from "express";
 import Stripe from "stripe";
 import jwt from "jsonwebtoken";
@@ -10,9 +6,23 @@ import cors from "cors";
 import { createClient } from "@supabase/supabase-js";
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
-
 app.use(cors());
+app.use(express.json());
+
+// Diagnostic route - MUST BE FIRST
+app.get("/api/health", (req, res) => {
+  res.json({ 
+    status: "ok", 
+    time: new Date().toISOString(),
+    env_keys: {
+      supabase_url: !!process.env.VITE_SUPABASE_URL,
+      supabase_key: !!process.env.VITE_SUPABASE_ANON_KEY,
+      openrouter: !!process.env.Openrouter_API_KEY
+    }
+  });
+});
+
+app.get("/api/test", (req, res) => res.json({ message: "API is working!" }));
 
 // Stripe webhook requires raw body for signature verification
 app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
@@ -35,8 +45,10 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
   }
 
   const supabaseAdmin = getSupabaseClient(undefined, true);
-
-  console.log(`Processing Stripe event: ${event.type}`);
+  if (!supabaseAdmin) {
+    console.error("Stripe Webhook: Supabase Admin client missing.");
+    return res.status(500).send("Internal Configuration Error");
+  }
 
   try {
     switch (event.type) {
@@ -101,15 +113,14 @@ app.use(express.json());
  * serviceRole = true will bypass RLS (strictly for internal/admin use)
  */
 const getSupabaseClient = (authHeader?: string, serviceRole = false) => {
-  const url = process.env.VITE_SUPABASE_URL || "";
+  const url = process.env.VITE_SUPABASE_URL;
   const key = serviceRole
-    ? process.env.SUPABASE_SERVICE_ROLE_KEY || ""
-    : process.env.VITE_SUPABASE_ANON_KEY || "";
+    ? process.env.SUPABASE_SERVICE_ROLE_KEY
+    : process.env.VITE_SUPABASE_ANON_KEY;
 
   if (!url || !key) {
-    const errorMsg = `Supabase configuration missing: URL=${!!url}, KEY=${!!key}, Role=${serviceRole}`;
-    console.error(`❌ ${errorMsg}`);
-    throw new Error(errorMsg);
+    console.error(`❌ SUPABASE_MISSING: url=${!!url}, key=${!!key}`);
+    return null;
   }
 
   return createClient(url, key, {
@@ -185,6 +196,8 @@ app.post("/api/transform", authenticate, async (req, res) => {
 
     // Run usage check and profile check in parallel with AI call for speed
     const supabase = getSupabaseClient(authHeader);
+    if (!supabase) return res.status(500).json({ error: "Database configuration missing" });
+    
     const today = new Date().toISOString().split('T')[0];
 
     // Get both profile (for plan) and usage logs
@@ -325,6 +338,8 @@ app.get("/api/usage", authenticate, async (req, res) => {
     const userId = (req as any).user?.sub || (req as any).user?.id;
     const authHeader = req.headers.authorization;
     const supabase = getSupabaseClient(authHeader);
+    if (!supabase) return res.status(500).json({ error: "Database configuration missing" });
+    
     const today = new Date().toISOString().split('T')[0];
 
     // Get plan
@@ -361,6 +376,7 @@ app.get("/api/history", authenticate, async (req, res) => {
     const userId = (req as any).user?.sub || (req as any).user?.id;
     const authHeader = req.headers.authorization;
     const supabase = getSupabaseClient(authHeader);
+    if (!supabase) return res.status(500).json({ error: "Database configuration missing" });
 
     const { data: history, error } = await supabase
       .from('prompt_history')
@@ -383,6 +399,8 @@ app.delete("/api/history/:id", authenticate, async (req, res) => {
     const userId = (req as any).user?.sub || (req as any).user?.id;
     const authHeader = req.headers.authorization;
     const supabase = getSupabaseClient(authHeader);
+    if (!supabase) return res.status(500).json({ error: "Database configuration missing" });
+    
     const { id } = req.params;
 
     const { error } = await supabase

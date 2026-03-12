@@ -27,6 +27,7 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     "server.ts",
+    "api/**/*.ts",
     "vite.config.ts"
   ]
 }

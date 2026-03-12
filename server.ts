@@ -186,7 +186,7 @@ app.post("/api/transform", authenticate, async (req, res) => {
     // Run usage check and profile check in parallel with AI call for speed
     const supabase = getSupabaseClient(authHeader);
     const today = new Date().toISOString().split('T')[0];
-    
+
     // Get both profile (for plan) and usage logs
     const profilePromise = supabase.from('profiles').select('plan').eq('id', userId).single();
     const usageCheckPromise = supabase
@@ -261,8 +261,8 @@ Output Guidelines:
     const currentUsage = usageResult.data?.[0]?.count || 0;
 
     if (currentUsage >= limit) {
-      return res.status(429).json({ 
-        error: "Daily limit reached.", 
+      return res.status(429).json({
+        error: "Daily limit reached.",
         details: plan === 'free' ? "Upgrade to Pro for more daily transforms." : "You have reached your high-volume daily limit."
       });
     }
@@ -433,31 +433,20 @@ app.use("/extension", express.static("public/extension"));
 
 export default app;
 
-async function startServer() {
-  if (process.env.NODE_ENV !== "production") {
+// Local development server startup
+if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
+  async function startServer() {
     const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
-  } else {
-    // In production (like on a VPS), serve static files from dist
-    // Note: On Vercel, static files are handled as a static site automatically.
-    if (!process.env.VERCEL) {
-      app.use(express.static("dist"));
-    }
-  }
-
-  // Only listen if we're not running as a serverless function (like on Vercel)
-  if (!process.env.VERCEL) {
-    app.listen(PORT, "0.0.0.0", () => {
+    
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });
   }
-}
-
-// Start the server process only when NOT on Vercel (where Vercel handles invocation)
-if (!process.env.VERCEL) {
   startServer();
 }

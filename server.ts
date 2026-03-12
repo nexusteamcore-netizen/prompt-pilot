@@ -1,5 +1,8 @@
 console.log(">>> SERVER SCRIPT STARTED <<<");
-import "dotenv/config";
+// Only load dotenv in local development
+if (process.env.NODE_ENV !== "production") {
+  await import("dotenv/config").catch(() => console.log("No .env file found"));
+}
 import express from "express";
 import Stripe from "stripe";
 import jwt from "jsonwebtoken";
@@ -7,7 +10,7 @@ import cors from "cors";
 import { createClient } from "@supabase/supabase-js";
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 app.use(cors());
 
@@ -102,6 +105,12 @@ const getSupabaseClient = (authHeader?: string, serviceRole = false) => {
   const key = serviceRole
     ? process.env.SUPABASE_SERVICE_ROLE_KEY || ""
     : process.env.VITE_SUPABASE_ANON_KEY || "";
+
+  if (!url || !key) {
+    const errorMsg = `Supabase configuration missing: URL=${!!url}, KEY=${!!key}, Role=${serviceRole}`;
+    console.error(`❌ ${errorMsg}`);
+    throw new Error(errorMsg);
+  }
 
   return createClient(url, key, {
     auth: { persistSession: false },

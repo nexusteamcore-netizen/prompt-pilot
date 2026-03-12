@@ -456,6 +456,8 @@ app.post("/api/stripe/checkout", authenticate, async (req, res) => {
 });
 
 // Serve the extension files
+// Serve all static files from public
+app.use(express.static("public"));
 app.use("/extension", express.static("public/extension"));
 
 export default app;

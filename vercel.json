@@ -27,6 +27,10 @@
       "dest": "/extension/$1"
     },
     {
+      "src": "/promptpilot-extension.zip",
+      "dest": "/promptpilot-extension.zip"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }

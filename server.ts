@@ -233,7 +233,7 @@ Output Guidelines:
       method: "POST",
       headers: {
         "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-        "HTTP-Referer": "http://localhost:3000",
+        "HTTP-Referer": process.env.APP_URL || "https://prompt-pilot-lime.vercel.app",
         "X-Title": "PromptPilot",
         "Content-Type": "application/json"
       },

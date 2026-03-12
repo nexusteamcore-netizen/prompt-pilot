@@ -170,136 +170,133 @@ export default function HistoryPage() {
         </button>
       </motion.div>
 
-      <motion.div variants={itemVariants} className="bg-stone-900/40 border border-stone-800/80 rounded-3xl overflow-hidden backdrop-blur-xl shadow-2xl">
+      <motion.div variants={itemVariants} className="bg-stone-900/40 border border-stone-800/80 rounded-[2rem] overflow-hidden backdrop-blur-xl shadow-2xl">
         {/* Filters */}
-        <div className="p-6 border-b border-stone-800/50 flex flex-col sm:flex-row gap-4 bg-stone-950/30">
+        <div className="p-4 md:p-8 border-b border-stone-800/50 flex flex-col md:flex-row gap-4 bg-stone-950/30">
           <div className="relative flex-1 group">
-            <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-stone-500 group-focus-within:text-stone-300 transition-colors" />
+            <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-stone-600 group-focus-within:text-stone-300 transition-colors" />
             <input
               type="text"
               placeholder="Search your prompts..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-stone-900/50 border border-stone-800/80 rounded-xl pl-11 pr-4 py-3 text-sm text-stone-200 focus:outline-none focus:ring-2 focus:ring-stone-700 focus:border-transparent transition-all placeholder:text-stone-600 shadow-inner"
+              className="w-full bg-stone-900/40 border border-stone-800 rounded-2xl pl-11 pr-4 py-4 text-sm text-stone-200 focus:outline-none focus:ring-2 focus:ring-stone-700 transition-all placeholder:text-stone-800"
             />
           </div>
           <div className="flex gap-2">
             <select 
               value={selectedMode}
               onChange={(e) => setSelectedMode(e.target.value)}
-              className="bg-stone-900/50 border border-stone-800/80 text-stone-300 text-sm rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-stone-700 transition-all appearance-none cursor-pointer"
+              className="bg-stone-900/40 border border-stone-800 text-stone-300 text-xs font-bold uppercase tracking-widest rounded-2xl px-6 py-4 focus:outline-none focus:ring-2 focus:ring-stone-700 transition-all appearance-none cursor-pointer flex-1 md:flex-none"
             >
               <option value="All">All Modes</option>
-              <option value="Professional">Professional</option>
-              <option value="Creative">Creative</option>
-              <option value="Technical">Technical</option>
-              <option value="Concise">Concise</option>
+              {["Professional", "Creative", "Technical", "Concise"].map(m => (
+                <option key={m} value={m}>{m}</option>
+              ))}
             </select>
           </div>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
+        {/* Desktop Table View (Hidden on mobile) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="bg-stone-950/50 text-stone-500 font-medium uppercase tracking-wider text-xs border-b border-stone-800/50">
+            <thead className="bg-stone-950/50 text-stone-600 font-bold uppercase tracking-[0.2em] text-[10px] border-b border-stone-800/30">
               <tr>
-                <th className="px-6 py-4">Date</th>
-                <th className="px-6 py-4">Original Text</th>
-                <th className="px-6 py-4">Mode</th>
-                <th className="px-6 py-4 text-right">Actions</th>
+                <th className="px-8 py-5">Date</th>
+                <th className="px-8 py-5">Summary</th>
+                <th className="px-8 py-5">Mode</th>
+                <th className="px-8 py-5 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-stone-800/30">
+            <tbody className="divide-y divide-stone-800/20">
               {filteredHistory.map((item, idx) => (
                 <React.Fragment key={item.id}>
                   <motion.tr
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.05 }}
-                    className="hover:bg-stone-800/30 transition-colors group cursor-pointer"
+                    className="hover:bg-stone-800/20 transition-colors group cursor-pointer"
                     onClick={() => toggleExpand(item.id)}
                   >
-                    <td className="px-6 py-5 text-stone-400 whitespace-nowrap font-mono text-xs flex items-center gap-2">
-                      <Clock className="w-3.5 h-3.5 text-stone-600" />
+                    <td className="px-8 py-6 text-stone-500 font-mono text-xs">
                       {new Date(item.created_at).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-5 text-stone-300 max-w-md">
-                      <div className="truncate pr-8">{item.original_text}</div>
+                    <td className="px-8 py-6 text-stone-300 max-w-md">
+                      <div className="truncate font-medium">{item.original_text}</div>
                     </td>
-                    <td className="px-6 py-5">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-stone-800/50 border border-stone-700/50 text-stone-300 text-xs font-medium capitalize">
-                        <BrandIcon className="w-3 h-3 text-stone-500" />
+                    <td className="px-8 py-6">
+                      <span className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-stone-900 border border-stone-800 text-stone-400 text-[10px] font-bold uppercase tracking-widest">
                         {item.mode}
                       </span>
                     </td>
-                    <td className="px-6 py-5 text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleExpand(item.id);
-                          }}
-                          className="p-2 text-stone-400 hover:text-stone-100 hover:bg-stone-800 rounded-lg transition-colors"
-                          title={expandedId === item.id ? "Hide Prompt" : "View Prompt"}
-                        >
-                          {expandedId === item.id ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            copyToClipboard(item.transformed_text);
-                          }}
-                          className="p-2 text-stone-400 hover:text-stone-100 hover:bg-stone-800 rounded-lg transition-colors"
-                          title="Copy Transformed Prompt"
-                        >
-                          <Copy className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={(e) => deleteHistoryItem(item.id, e)}
-                          className="p-2 text-stone-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                    <td className="px-8 py-6 text-right">
+                      <div className="flex items-center justify-end gap-3 transition-opacity">
+                        <button onClick={(e) => { e.stopPropagation(); copyToClipboard(item.transformed_text); }} className="p-2 text-stone-500 hover:text-stone-100 hover:bg-stone-800 rounded-xl transition-all"><Copy className="w-4 h-4" /></button>
+                        <button onClick={(e) => deleteHistoryItem(item.id, e)} className="p-2 text-stone-600 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </td>
                   </motion.tr>
-                  {expandedId === item.id && (
-                    <tr className="bg-stone-900/60 border-b border-stone-800/30">
-                      <td colSpan={4} className="px-6 py-4">
-                        <div className="p-4 bg-stone-950/50 rounded-xl border border-stone-800/50">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-medium text-stone-500 uppercase tracking-wider">Transformed Prompt</span>
-                            <button
-                              onClick={() => copyToClipboard(item.transformed_text)}
-                              className="flex items-center gap-1.5 text-xs font-medium text-stone-400 hover:text-stone-200 transition-colors"
-                            >
-                              <Copy className="w-3.5 h-3.5" /> Copy
-                            </button>
-                          </div>
-                          <p className="text-sm text-stone-300 whitespace-pre-wrap font-mono leading-relaxed">
-                            {item.transformed_text}
-                          </p>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
+                  <AnimatePresence>
+                    {expandedId === item.id && (
+                      <tr>
+                        <td colSpan={4} className="p-0">
+                          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden bg-stone-950/40">
+                             <div className="p-8 border-b border-stone-800/30">
+                                <div className="text-[10px] font-black text-stone-600 uppercase tracking-[0.3em] mb-4">Refined Flight Plan</div>
+                                <div className="bg-stone-950 border border-stone-800/50 p-6 rounded-[1.5rem] text-stone-100 font-medium leading-relaxed font-sans text-base shadow-inner">
+                                  {item.transformed_text}
+                                </div>
+                             </div>
+                          </motion.div>
+                        </td>
+                      </tr>
+                    )}
+                  </AnimatePresence>
                 </React.Fragment>
               ))}
-              {filteredHistory.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="px-6 py-16 text-center">
-                    <div className="flex flex-col items-center justify-center text-stone-500">
-                      <BrandIcon className="w-8 h-8 mb-3 text-stone-700" />
-                      <p>{searchQuery || selectedMode !== "All" ? "No results found for your search." : "No history found."}</p>
-                      <p className="text-xs mt-1 text-stone-600">Your enhanced prompts will appear here.</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
+
+        {/* Mobile List View (Shown only on mobile) */}
+        <div className="md:hidden divide-y divide-stone-800/30">
+          {filteredHistory.map((item) => (
+            <div key={item.id} className="p-5 active:bg-stone-900 transition-colors" onClick={() => toggleExpand(item.id)}>
+              <div className="flex justify-between items-start mb-3">
+                <span className="text-[10px] font-black text-stone-700 font-mono tracking-widest">{new Date(item.created_at).toLocaleDateString()}</span>
+                <span className="text-[10px] font-black text-stone-500 bg-stone-900 border border-stone-800 px-3 py-1 rounded-full uppercase tracking-widest">{item.mode}</span>
+              </div>
+              <p className="text-sm font-bold text-stone-300 line-clamp-2 mb-4 leading-relaxed">{item.original_text}</p>
+              
+              <AnimatePresence>
+                {expandedId === item.id && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                    <div className="bg-black/40 p-5 rounded-2xl border border-stone-800/50 mb-4 shadow-inner">
+                       <p className="text-sm text-stone-100 font-medium leading-relaxed mb-4">{item.transformed_text}</p>
+                       <div className="flex gap-2">
+                          <button onClick={(e) => { e.stopPropagation(); copyToClipboard(item.transformed_text); }} className="flex-1 py-3 bg-stone-100 text-stone-950 text-[10px] font-black rounded-xl uppercase tracking-widest">Copy Result</button>
+                          <button onClick={(e) => deleteHistoryItem(item.id, e)} className="p-3 bg-red-500/10 text-red-500 rounded-xl"><Trash2 className="w-4 h-4" /></button>
+                       </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              
+              {!expandedId && (
+                <div className="flex items-center gap-2 text-[10px] font-black text-stone-600 uppercase tracking-widest">
+                   <Eye className="w-3 h-3" /> Tap to view details
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {filteredHistory.length === 0 && (
+          <div className="p-20 text-center">
+            <BrandIcon className="w-10 h-10 mx-auto mb-4 text-stone-800" />
+            <p className="text-stone-600 font-bold uppercase tracking-widest text-[10px]">No flight records found</p>
+          </div>
+        )}
       </motion.div>
     </motion.div>
   );

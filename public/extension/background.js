@@ -20,54 +20,44 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 async function handleTransformation({ text, mode }) {
-    console.log("PromptPilot: Received transformation request...");
+    console.log(`PromptPilot [BG]: Starting transformation in ${mode} mode...`);
     const { pp_token, pp_base_url } = await chrome.storage.local.get(["pp_token", "pp_base_url"]);
     const BASE_PATH = pp_base_url || "http://localhost:3000";
 
     if (!pp_token) {
-        console.error("PromptPilot: Missing token. User might not be signed in.");
-        throw new Error("Sign-In Required on Website");
+        throw new Error("Login Required: Open the website and sign in first.");
     }
 
-    console.log(`PromptPilot: Fetching from ${BASE_PATH}/api/transform...`);
-
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout for the fetch itself
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
 
     try {
-        console.log("PromptPilot: Initiating fetch to server...");
         const res = await fetch(`${BASE_PATH}/api/transform`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${pp_token}`
             },
-            body: JSON.stringify({ text, mode }),
+            body: JSON.stringify({ text, mode, context: "chrome-extension" }),
             signal: controller.signal
         });
 
-        console.log("PromptPilot: Fetch status:", res.status);
         clearTimeout(timeoutId);
 
         if (!res.ok) {
             const errorData = await res.json().catch(() => ({}));
-            console.error("PromptPilot: API error:", errorData);
-            throw new Error(errorData.error || "Server Error (Credits/Quota)");
+            throw new Error(errorData.error || `Server Error (${res.status})`);
         }
 
         const data = await res.json();
-        console.log("PromptPilot: Transformation successful!");
+        if (!data.transformed) throw new Error("AI returned an empty response. Try re-phrasing.");
+        
+        console.log("PromptPilot [BG]: Transformation Complete!");
         return data;
     } catch (fetchErr) {
         clearTimeout(timeoutId);
-        console.error("PromptPilot Error:", fetchErr);
-
-        if (fetchErr.name === "AbortError") {
-            throw new Error("Request Timed Out (Server too slow)");
-        }
-        if (fetchErr.message.includes("Failed to fetch")) {
-            throw new Error("Local Server Offline (Run: npx tsx server.ts)");
-        }
+        if (fetchErr.name === "AbortError") throw new Error("Request Timed Out (Prompt might be too complex)");
+        if (fetchErr.message.includes("Failed to fetch")) throw new Error("Connection Failed: Ensure the server/site is online.");
         throw fetchErr;
     }
 }

@@ -129,88 +129,48 @@ function createStartupBadge() {
         ppBadge.innerHTML = `<span class="pp-spinner"></span>`;
 
         try {
-            // DIRECT FETCH — bypasses background service worker entirely
-            const storage = await new Promise(resolve => safeGet(["pp_token", "pp_base_url", "pp_mode"], resolve));
-            const token = storage.pp_token;
-            const baseUrl = storage.pp_base_url || "http://localhost:3000";
+            // Get saved mode
+            const storage = await new Promise(resolve => safeGet(["pp_mode"], resolve));
             const mode = storage.pp_mode || "professional";
 
-            console.log("PromptPilot: Direct fetch to", baseUrl, "| Token exists:", !!token);
+            showFeedback("Optimizing...", "#3b82f6");
+            ppBadge.classList.add("enhancing");
+            ppBadge.innerHTML = `<span class="pp-spinner"></span>`;
 
-            if (!token) {
-                showFeedback("Sign In on Website First!", "#ef4444");
-                resetBadge();
-                return;
-            }
+            // DELEGATE TO BACKGROUND SCRIPT
+            chrome.runtime.sendMessage({ 
+                type: "TRANSFORM_PROMPT", 
+                data: { text, mode } 
+            }, (response) => {
+                if (!isContextValid()) return;
 
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => {
-                controller.abort();
-                showFeedback("Timed Out ⏳ (Server slow?)", "#ef4444");
-                resetBadge();
-            }, 20000);
-
-            try {
-                const res = await fetch(`${baseUrl}/api/transform`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ text, mode }),
-                    signal: controller.signal
-                });
-
-                clearTimeout(timeoutId);
-                console.log("PromptPilot: Server responded with status:", res.status);
-
-                if (!res.ok) {
-                    const errData = await res.json().catch(() => ({}));
-                    showFeedback(errData.error || `Server Error ${res.status}`, "#ef4444");
+                if (response?.error) {
+                    showFeedback(response.error, "#ef4444");
                     resetBadge();
                     return;
                 }
 
-                const data = await res.json();
-                const transformed = data.transformed;
-
-                if (!transformed) {
-                    showFeedback("Empty AI Response", "#ef4444");
+                if (response?.transformed) {
+                    // Inject the transformed text
+                    lastFocusedInput.focus();
+                    if (lastFocusedInput.tagName === "TEXTAREA" || lastFocusedInput.tagName === "INPUT") {
+                        lastFocusedInput.value = response.transformed;
+                    } else {
+                        document.execCommand('selectAll', false, null);
+                        document.execCommand('insertText', false, response.transformed);
+                    }
+                    lastFocusedInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    showFeedback("Enhanced! ✨", "#10b981");
                     resetBadge();
-                    return;
-                }
-
-                // Inject the transformed text
-                lastFocusedInput.focus();
-                if (lastFocusedInput.tagName === "TEXTAREA" || lastFocusedInput.tagName === "INPUT") {
-                    lastFocusedInput.value = transformed;
                 } else {
-                    document.execCommand('selectAll', false, null);
-                    document.execCommand('insertText', false, transformed);
+                    showFeedback("Empty Response", "#ef4444");
+                    resetBadge();
                 }
-                lastFocusedInput.dispatchEvent(new Event('input', { bubbles: true }));
-                showFeedback("Done! ✨", "#10b981");
-                console.log("PromptPilot: Success!");
-                resetBadge();
-
-            } catch (fetchErr) {
-                clearTimeout(timeoutId);
-                if (fetchErr.name === "AbortError") {
-                    // Already handled by timeout
-                    return;
-                }
-                console.error("PromptPilot fetch error:", fetchErr);
-                if (fetchErr.message.includes("Failed to fetch") || fetchErr.message.includes("NetworkError")) {
-                    showFeedback("Server Offline! Run npx tsx server.ts", "#ef4444");
-                } else {
-                    showFeedback("Error: " + fetchErr.message.substring(0, 30), "#ef4444");
-                }
-                resetBadge();
-            }
+            });
 
         } catch (err) {
-            console.error("PromptPilot Critical Catch:", err);
-            showFeedback("Internal Error", "#ef4444");
+            console.error("PromptPilot Critical Error:", err);
+            showFeedback("Error: Communication Failed", "#ef4444");
             resetBadge();
         }
     });

@@ -220,30 +220,30 @@ app.post("/api/transform", authenticate, async (req, res) => {
       direct: "No-nonsense and assertive. Commands the AI with maximum authority and zero pleasantries."
     };
 
-    const systemInstruction = `You are PromptPilot, an elite AI prompt engineer. Your mission is to transform casual, rough, or vague user inputs into ultra-powerful prompts using the "Prompt Engineering Framework".
+    console.time(`transform-${userId}`);
+    const systemInstruction = `Critically important: Act as PromptPilot, a world-class prompt engineer. Your sole mission is to take rough inputs and expand them into "Elite Master Prompts" following the PROMPT ENGINEERING FRAMEWORK.
 
-MODE DEFINITION:
-- Current Mode: ${mode || "professional"}
-- Guidelines for this mode: ${modeDefinitions[mode || "professional"] || modeDefinitions.professional}
+YOU MUST IMPLEMENT ALL 10 PILLARS IN A NARRATIVE MANNER:
+1. Context Setting (Rich background)
+2. Role Assignment (Expert persona)
+3. Task Definition (Primary goal)
+4. Scope and Constraints (Strict boundaries)
+5. Output Format Specification (Tables/Structure)
+6. Input Data (Placeholders)
+7. Examples (1-2 high-quality shots)
+8. Step-by-Step Reasoning Instruction (Thinking steps)
+9. Quality Criteria (Standards)
+10. Output Validation Instructions (Checklist)
 
-Every prompt you generate MUST strictly follow the 10-point Framework:
-1. Context Setting: Establish domain background, audience, and specific scenario.
-2. Role Assignment: Assign a specialized professional identity or expertise.
-3. Task Definition: State action-oriented, specific, and unambiguous goals.
-4. Scope and Constraints: Define boundaries (word limits, style, technical restrictions).
-5. Output Format Specification: Structure the response (bullet points, tables, JSON, sections).
-6. Input Data: Clearly identify any data to be analyzed or transformed.
-7. Few-Shot Examples: Use demonstrations to guide style and formatting.
-8. Step-by-Step Reasoning (Chain-of-Thought): Encourage logical processing for complex tasks.
-9. Quality Criteria: Define standards (clarity, accuracy, conciseness, actionability).
-10. Output Validation: Double-check the result against all constraints and logic.
+STRICT RULES:
+- Output ONLY the final prompt text. 
+- ABSOLUTELY NO preamble, NO introductory filler, and NO post-text. 
+- BE EXHAUSTIVE: If the input is simple, you MUST flesh out the details to create a robust, lengthy, and complete instruction (at least 500-800 words if possible).
+- DO NOT list the 10 points for the user; weave them into the instruction itself.
+- Ensure the result is optimized for Gemini 2.0 and GPT-4 logic.
+- Mode: ${modeDefinitions[mode || "professional"] || modeDefinitions.professional}.`;
 
-Output Guidelines:
-- Output ONLY the final transformed prompt. No preamble or explanations.
-- Ensure the result reflects the ${mode || "professional"} style and matches the context: ${context || "general"}.
-`;
-
-    const modelName = "google/gemini-2.0-flash-001"; // Switching back to proven model
+    const modelName = "google/gemini-2.0-flash-001";
 
     if (!OPENROUTER_API_KEY) {
       return res.status(500).json({ error: "API key not configured" });
@@ -265,7 +265,7 @@ Output Guidelines:
           { role: "user", content: text }
         ],
         temperature: 0.7,
-        max_tokens: 800
+        max_tokens: 1500
       })
     });
 
@@ -328,6 +328,7 @@ Output Guidelines:
 
     // Fire and forget — don't block the response
     Promise.all([upsertUsage, saveHistory]).catch(e => console.warn("Background DB write failed:", e));
+    console.timeEnd(`transform-${userId}`);
 
     res.json({
       transformed,

@@ -5,8 +5,7 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('❌ Missing Supabase environment variables! Check your .env file.');
-  throw new Error('Supabase initialization failed due to missing credentials');
+  console.warn('⚠️ Missing Supabase environment variables! Site may not function correctly.');
 }
 
 // 1. Initialize Client

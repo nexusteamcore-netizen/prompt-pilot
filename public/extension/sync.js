@@ -10,7 +10,7 @@ function safeStorageSet(data, callback) {
 }
 
 function syncLatestToken() {
-    if (window.location.host.includes("localhost") || window.location.host.includes("promptpilot")) {
+    if (window.location.host.includes("localhost") || window.location.host.includes("prompt-pilot") || window.location.host.includes("promptpilot")) {
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
             if (key && (key.includes("-auth-token") || key.endsWith("auth-token"))) {

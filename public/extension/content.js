@@ -1,17 +1,3 @@
-// content.js - Minimalist Branding & Drag Interface
-
-// Safety helpers — all chrome API calls must go through these
-function safeGet(keys, cb) {
-    try { if (chrome?.storage?.local) chrome.storage.local.get(keys, cb); else cb({}); }
-    catch (e) { cb({}); }
-}
-function safeSet(data) {
-    try { if (chrome?.storage?.local) chrome.storage.local.set(data); } catch (e) { }
-}
-function isContextValid() {
-    try { return !!chrome.runtime?.id; } catch (e) { return false; }
-}
-
 let lastFocusedInput = null;
 let ppBadge = null;
 let isDragging = false;
@@ -27,10 +13,10 @@ const inputSelectors = [
 
 function createStartupBadge() {
     if (ppBadge) return;
+    console.log("PromptPilot: Creating badge...");
 
     ppBadge = document.createElement("button");
     ppBadge.className = "pp-enhance-btn";
-    // The Pen-Rocket Sign 🖋️🚀
     ppBadge.innerHTML = `
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M12 2C12 2 17 8 17 13C17 18 12 21 12 21C12 21 7 18 7 13C7 8 12 2 12 2Z"/>
@@ -40,140 +26,120 @@ function createStartupBadge() {
     </svg>
   `;
 
-    // Restore position & Hide by default
-    safeGet(["pp_badge_pos"], (res) => {
-        const pos = res.pp_badge_pos || { bottom: 40, right: 40 };
-        Object.assign(ppBadge.style, {
-            bottom: pos.bottom + (typeof pos.bottom === "number" ? "px" : ""),
-            right: pos.right + (typeof pos.right === "number" ? "px" : ""),
-            left: pos.left + (typeof pos.left === "number" ? "px" : ""),
-            top: pos.top + (typeof pos.top === "number" ? "px" : ""),
-            opacity: "0",
-            pointerEvents: "none",
-            transform: "scale(0.8) translateY(10px)"
-        });
+    // Initialize style
+    Object.assign(ppBadge.style, {
+        bottom: "40px",
+        right: "40px",
+        opacity: "0",
+        pointerEvents: "none",
+        position: "fixed"
     });
 
     document.body.appendChild(ppBadge);
 
-    // Minimalist Dragging logic
-    ppBadge.addEventListener("mousedown", (e) => {
-        isDragging = false;
-        startX = e.clientX;
-        startY = e.clientY;
-
-        const rect = ppBadge.getBoundingClientRect();
-        const offsetX = e.clientX - rect.left;
-        const offsetY = e.clientY - rect.top;
-
-        const onMouseMove = (moveEvent) => {
-            const dx = moveEvent.clientX - startX;
-            const dy = moveEvent.clientY - startY;
-
-            if (!isDragging && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
-                isDragging = true;
-            }
-
-            if (isDragging) {
-                ppBadge.style.left = (moveEvent.clientX - offsetX) + "px";
-                ppBadge.style.top = (moveEvent.clientY - offsetY) + "px";
-                ppBadge.style.right = "auto";
-                ppBadge.style.bottom = "auto";
-                ppBadge.style.transition = "none";
-            }
-        };
-
-        const onMouseUp = () => {
-            document.removeEventListener("mousemove", onMouseMove);
-            document.removeEventListener("mouseup", onMouseUp);
-
-            if (isDragging) {
-                ppBadge.style.transition = "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)";
-                const rect = ppBadge.getBoundingClientRect();
-                try {
-                    if (chrome?.storage?.local) {
-                        safeSet({
-                            pp_badge_pos: { top: rect.top, left: rect.left, right: "auto", bottom: "auto" }
-                        });
-                    }
-                } catch (e) { /* Extension context may be invalid */ }
-            }
-            // Reset dragging state after a tiny delay
-            setTimeout(() => { isDragging = false; }, 50);
-        };
-
-        document.addEventListener("mousemove", onMouseMove);
-        document.addEventListener("mouseup", onMouseUp);
-    });
-
-    // Action logic
-    ppBadge.addEventListener("click", async () => {
+    // Click Logic
+    ppBadge.addEventListener("click", async (e) => {
         if (isDragging) return;
-        if (!lastFocusedInput) {
-            showFeedback("Click a text field first!", "#f59e0b");
+        console.log("PromptPilot: Click detected.");
+
+        if (!chrome?.runtime?.id) {
+            console.error("PromptPilot: Context invalidated. Please refresh the page.");
+            alert("PromptPilot: Please refresh the page (Session expired).");
             return;
         }
 
-        if (!isContextValid()) return ppBadge.remove();
+        if (!lastFocusedInput) {
+            console.warn("PromptPilot: No input field focused.");
+            showFeedback("Click a chat box first!", "#f59e0b");
+            return;
+        }
 
-        let text = lastFocusedInput.value || lastFocusedInput.innerText || "";
-        if (!text.trim()) {
+        const text = (lastFocusedInput.value || lastFocusedInput.innerText || "").trim();
+        if (!text) {
+            console.warn("PromptPilot: Input is empty.");
             showFeedback("Write something first!", "#f59e0b");
             return;
         }
 
-        console.log("PromptPilot: Click detected. Preparing request...");
-        console.log("PromptPilot: Starting transformation...");
-        showFeedback("Starting...", "#3b82f6");
+        // Start animation
         ppBadge.classList.add("enhancing");
         ppBadge.innerHTML = `<span class="pp-spinner"></span>`;
+        showFeedback("Enhancing...", "#3b82f6");
 
         try {
-            // Get saved mode
-            const storage = await new Promise(resolve => safeGet(["pp_mode"], resolve));
+            console.log("PromptPilot: Fetching settings from storage...");
+            const storage = await chrome.storage.local.get(["pp_mode"]);
             const mode = storage.pp_mode || "professional";
 
-            showFeedback("Optimizing...", "#3b82f6");
-            ppBadge.classList.add("enhancing");
-            ppBadge.innerHTML = `<span class="pp-spinner"></span>`;
-
-            // DELEGATE TO BACKGROUND SCRIPT
+            console.log("PromptPilot: Sending message to background for mode:", mode);
             chrome.runtime.sendMessage({ 
                 type: "TRANSFORM_PROMPT", 
                 data: { text, mode } 
             }, (response) => {
-                if (!isContextValid()) return;
-
-                if (response?.error) {
-                    showFeedback(response.error, "#ef4444");
+                if (chrome.runtime.lastError) {
+                    console.error("Runtime error:", chrome.runtime.lastError);
+                    showFeedback("Service Error", "#ef4444");
                     resetBadge();
                     return;
                 }
 
-                if (response?.transformed) {
-                    // Inject the transformed text
-                    lastFocusedInput.focus();
-                    if (lastFocusedInput.tagName === "TEXTAREA" || lastFocusedInput.tagName === "INPUT") {
-                        lastFocusedInput.value = response.transformed;
-                    } else {
-                        document.execCommand('selectAll', false, null);
-                        document.execCommand('insertText', false, response.transformed);
-                    }
-                    lastFocusedInput.dispatchEvent(new Event('input', { bubbles: true }));
-                    showFeedback("Enhanced! ✨", "#10b981");
-                    resetBadge();
+                console.log("PromptPilot: Response received from background:", !!response);
+                if (response?.error) {
+                    console.error("PromptPilot API Error:", response.error);
+                    showFeedback(response.error, "#ef4444");
+                } else if (response?.transformed) {
+                    console.log("PromptPilot: Injecting transformed text.");
+                    injectText(response.transformed);
+                    showFeedback("Done! ✨", "#10b981");
                 } else {
-                    showFeedback("Empty Response", "#ef4444");
-                    resetBadge();
+                    console.error("PromptPilot: Empty or invalid response.");
+                    showFeedback("Failed (No Data)", "#ef4444");
                 }
+                resetBadge();
             });
-
         } catch (err) {
-            console.error("PromptPilot Critical Error:", err);
-            showFeedback("Error: Communication Failed", "#ef4444");
+            console.error("PromptPilot Task Error:", err);
+            showFeedback("System Error", "#ef4444");
             resetBadge();
         }
     });
+
+    // Dragging logic
+    ppBadge.addEventListener("mousedown", (e) => {
+        isDragging = false;
+        startX = e.clientX;
+        startY = e.clientY;
+        const rect = ppBadge.getBoundingClientRect();
+        const offsetX = e.clientX - rect.left;
+        const offsetY = e.clientY - rect.top;
+
+        const move = (mE) => {
+            if (Math.abs(mE.clientX - startX) > 5 || Math.abs(mE.clientY - startY) > 5) isDragging = true;
+            if (isDragging) {
+                ppBadge.style.left = (mE.clientX - offsetX) + "px";
+                ppBadge.style.top = (mE.clientY - offsetY) + "px";
+                ppBadge.style.right = "auto"; ppBadge.style.bottom = "auto";
+            }
+        };
+        const up = () => {
+            document.removeEventListener("mousemove", move);
+            document.removeEventListener("mouseup", up);
+        };
+        document.addEventListener("mousemove", move);
+        document.addEventListener("mouseup", up);
+    });
+}
+
+function injectText(text) {
+    if (!lastFocusedInput) return;
+    lastFocusedInput.focus();
+    if (lastFocusedInput.tagName === "TEXTAREA" || lastFocusedInput.tagName === "INPUT") {
+        lastFocusedInput.value = text;
+    } else {
+        document.execCommand('selectAll', false, null);
+        document.execCommand('insertText', false, text);
+    }
+    lastFocusedInput.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
 function showFeedback(text, color) {
@@ -182,61 +148,28 @@ function showFeedback(text, color) {
     pop.style.background = color;
     pop.innerText = text;
     ppBadge.appendChild(pop);
-    setTimeout(() => pop.remove(), 2500);
+    setTimeout(() => pop.remove(), 3000);
 }
 
 function resetBadge() {
     if (!ppBadge) return;
     ppBadge.classList.remove("enhancing");
-    ppBadge.innerHTML = `
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 2C12 2 17 8 17 13C17 18 12 21 12 21C12 21 7 18 7 13C7 8 12 2 12 2Z"/>
-      <path d="M12 8V13"/>
-      <path d="M7 16L3 20"/>
-      <path d="M17 16L21 20"/>
-    </svg>
-  `;
+    ppBadge.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C12 2 17 8 17 13C17 18 12 21 12 21C12 21 7 18 7 13C7 8 12 2 12 2Z"></path><path d="M12 8V13"></path><path d="M7 16L3 20"></path><path d="M17 16L21 20"></path></svg>`;
 }
 
-// Use focusin to catch all focus events (clicks, tabs, etc.)
 document.addEventListener("focusin", (e) => {
-    if (!ppBadge) return;
-
-    // Check if the focused element IS an input or INSIDE one
     const target = e.target;
-    const inputElement = target.closest(inputSelectors.join(','));
-    const isContentEditable = target.closest('[contenteditable="true"]');
-
+    if (!target) return;
+    const inputElement = target.closest && target.closest(inputSelectors.join(','));
+    const isContentEditable = target.closest && target.closest('[contenteditable="true"]');
     if (inputElement || isContentEditable) {
         lastFocusedInput = inputElement || isContentEditable;
-        ppBadge.style.opacity = "0.8";
-        ppBadge.style.pointerEvents = "auto";
-        ppBadge.style.transform = "scale(1) translateY(0)";
+        if (ppBadge) {
+            ppBadge.style.opacity = "1";
+            ppBadge.style.pointerEvents = "auto";
+            ppBadge.style.transform = "scale(1)";
+        }
     }
 });
 
-// Use mousedown only for hiding when clicking outside
-document.addEventListener("mousedown", (e) => {
-    if (!ppBadge) return;
-
-    const target = e.target;
-    const isInput = target.closest(inputSelectors.join(',')) || target.closest('[contenteditable="true"]');
-
-    if (!isInput && !ppBadge.contains(target)) {
-        // Small delay to ensure we're not in the middle of a drag
-        setTimeout(() => {
-            if (!isDragging) {
-                ppBadge.style.opacity = "0";
-                ppBadge.style.pointerEvents = "none";
-                ppBadge.style.transform = "scale(0.8) translateY(10px)";
-            }
-        }, 150);
-    }
-});
-
-// Create badge
-if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", createStartupBadge);
-} else {
-    createStartupBadge();
-}
+createStartupBadge();

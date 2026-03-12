@@ -1,63 +1,61 @@
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    console.log("PromptPilot: Message received in background!", request);
+    console.log("PromptPilot [BG]: Message received:", request.type);
 
     if (request.type === "TRANSFORM_PROMPT") {
-        // QUICK TEST: Uncomment this to test if the pipe works without the server
-        // sendResponse({ transformed: "Pipe Test: " + request.data.text });
-        // return;
-
         handleTransformation(request.data)
             .then(res => {
-                console.log("PromptPilot: Sending success response back.");
+                console.log("PromptPilot [BG]: Success! Sending response.");
                 sendResponse(res);
             })
             .catch(err => {
-                console.error("PromptPilot: Sending error response back:", err);
+                console.error("PromptPilot [BG]: Error:", err.message);
                 sendResponse({ error: err.message });
             });
-        return true;
+        return true; // Keep channel open for async response
     }
 });
 
 async function handleTransformation({ text, mode }) {
-    console.log(`PromptPilot [BG]: Starting transformation in ${mode} mode...`);
-    const { pp_token, pp_base_url } = await chrome.storage.local.get(["pp_token", "pp_base_url"]);
-    const BASE_PATH = pp_base_url || "http://localhost:3000";
+    console.log("PromptPilot [BG]: Fetching storage...");
+    const storage = await chrome.storage.local.get(["pp_token", "pp_base_url"]);
+    
+    // PRIORITY: 1. Sync token, 2. Manual setting, 3. Production Fallback
+    const BASE_URL = storage.pp_base_url || "https://prompt-pilot-lime.vercel.app";
+    const token = storage.pp_token;
 
-    if (!pp_token) {
-        throw new Error("Login Required: Open the website and sign in first.");
+    console.log("PromptPilot [BG]: Using Base URL:", BASE_URL);
+
+    if (!token) {
+        throw new Error("Login Required: Please open the PromptPilot website and sign in.");
     }
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
-
     try {
-        const res = await fetch(`${BASE_PATH}/api/transform`, {
+        console.log("PromptPilot [BG]: Sending fetch request...");
+        const response = await fetch(`${BASE_URL}/api/transform`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${pp_token}`
+                "Authorization": `Bearer ${token}`
             },
-            body: JSON.stringify({ text, mode, context: "chrome-extension" }),
-            signal: controller.signal
+            body: JSON.stringify({ 
+                text, 
+                mode, 
+                context: "chrome-extension",
+                origin: "extension-v1"
+            })
         });
 
-        clearTimeout(timeoutId);
-
-        if (!res.ok) {
-            const errorData = await res.json().catch(() => ({}));
-            throw new Error(errorData.error || `Server Error (${res.status})`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("PromptPilot [BG]: API Error:", response.status, errorText);
+            throw new Error(`Server Error: ${response.status}`);
         }
 
-        const data = await res.json();
-        if (!data.transformed) throw new Error("AI returned an empty response. Try re-phrasing.");
-        
-        console.log("PromptPilot [BG]: Transformation Complete!");
+        const data = await response.json();
+        console.log("PromptPilot [BG]: Received transformed prompt.");
         return data;
-    } catch (fetchErr) {
-        clearTimeout(timeoutId);
-        if (fetchErr.name === "AbortError") throw new Error("Request Timed Out (Prompt might be too complex)");
-        if (fetchErr.message.includes("Failed to fetch")) throw new Error("Connection Failed: Ensure the server/site is online.");
-        throw fetchErr;
+    } catch (err) {
+        console.error("PromptPilot [BG]: Fetch failed:", err);
+        throw new Error(err.message.includes("Failed to fetch") ? "Connection Error: Is the site online?" : err.message);
     }
 }

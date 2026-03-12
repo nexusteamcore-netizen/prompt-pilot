@@ -26,7 +26,7 @@ export default function ExtensionPage() {
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 relative z-10 mb-12">
           <a
-            href="/promptpilot-extension.zip"
+            href="/extension/promptpilot-extension.zip"
             download="promptpilot-extension.zip"
             className="w-full sm:w-auto px-8 py-4 bg-stone-100 text-stone-950 font-bold rounded-xl hover:bg-white transition-all flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(245,245,244,0.1)] hover:shadow-[0_0_25px_rgba(245,245,244,0.2)] active:scale-95 cursor-pointer"
           >

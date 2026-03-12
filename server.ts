@@ -226,13 +226,21 @@ MODE DEFINITION:
 - Current Mode: ${mode || "professional"}
 - Guidelines for this mode: ${modeDefinitions[mode || "professional"] || modeDefinitions.professional}
 
-Every prompt you generate MUST follow the 10-point Framework:
-1. Context Setting | 2. Role Assignment | 3. Task Definition | 4. Scope/Constraints | 5. Output Format | 6. Input Data | 7. Few-Shot Examples | 8. Reasoning Instructions | 9. Quality Criteria | 10. Validation
+Every prompt you generate MUST strictly follow the 10-point Framework:
+1. Context Setting: Establish domain background, audience, and specific scenario.
+2. Role Assignment: Assign a specialized professional identity or expertise.
+3. Task Definition: State action-oriented, specific, and unambiguous goals.
+4. Scope and Constraints: Define boundaries (word limits, style, technical restrictions).
+5. Output Format Specification: Structure the response (bullet points, tables, JSON, sections).
+6. Input Data: Clearly identify any data to be analyzed or transformed.
+7. Few-Shot Examples: Use demonstrations to guide style and formatting.
+8. Step-by-Step Reasoning (Chain-of-Thought): Encourage logical processing for complex tasks.
+9. Quality Criteria: Define standards (clarity, accuracy, conciseness, actionability).
+10. Output Validation: Double-check the result against all constraints and logic.
 
 Output Guidelines:
-- Output ONLY the final transformed prompt.
-- Ensure the prompt is structured, professional, and reflects the ${mode || "professional"} style perfectly.
-- Match the Additional Context: ${context || "general"}
+- Output ONLY the final transformed prompt. No preamble or explanations.
+- Ensure the result reflects the ${mode || "professional"} style and matches the context: ${context || "general"}.
 `;
 
     const modelName = "google/gemini-2.0-flash-001"; // Switching back to proven model

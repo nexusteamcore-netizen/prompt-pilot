@@ -124,11 +124,11 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-4xl sm:text-6xl md:text-8xl font-black text-stone-100 tracking-tighter mb-8 leading-[0.9] md:leading-[1.1]"
+            className="md:text-6xl text-4xl font-semibold text-stone-100 tracking-tighter mb-6 leading-[1.1]"
           >
-            Engineering <br className="hidden sm:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-stone-100 via-stone-400 to-stone-100 bg-[length:200%_auto] animate-[shimmer_5s_linear_infinite]">
-              Perfect Prompts
+            Write better prompts.<br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-stone-100 to-stone-500">
+              Without writing them.
             </span>
           </motion.h1>
 
@@ -136,9 +136,9 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-base md:text-xl text-stone-500 max-w-2xl mx-auto mb-12 leading-relaxed font-medium px-4"
+            className="text-lg text-stone-400 max-w-2xl mx-auto mb-10 leading-relaxed"
           >
-            Stop struggling with AI inputs. PromptPilot translates your raw thoughts into optimized, professional prompts — instantly, right where you work.
+            Stop struggling with how to ask AI. PromptPilot reads your intent and builds a perfect prompt — right inside ChatGPT, Claude, and every AI tool you use.
           </motion.p>
 
           <motion.div

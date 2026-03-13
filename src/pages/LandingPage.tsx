@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Menu, X, Rocket, Zap, Target, Globe, Shield, History, SlidersHorizontal, Check, ArrowRight, PlayCircle, Bot, Brain, Cpu, Aperture, Code, PenTool, LineChart } from "lucide-react";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { BrandIcon } from "../components/BrandIcon";
+import { toast } from "sonner";
 
 export default function LandingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -157,10 +158,13 @@ export default function LandingPage() {
               Add to Chrome — It's Free
               <ArrowRight className="w-4 h-4" />
             </button>
-            <a href="#demo" className="w-full sm:w-auto px-8 py-3 bg-stone-900 text-stone-300 font-medium rounded-lg border border-stone-800 hover:bg-stone-800 hover:text-stone-100 transition-colors flex items-center justify-center gap-2 group">
+            <button 
+              onClick={() => toast("Coming soon! 🚀")}
+              className="w-full sm:w-auto px-8 py-3 bg-stone-900 text-stone-300 font-medium rounded-lg border border-stone-800 hover:bg-stone-800 hover:text-stone-100 transition-colors flex items-center justify-center gap-2 group"
+            >
               <PlayCircle className="w-4 h-4 group-hover:text-stone-100 transition-colors" />
               Watch Demo
-            </a>
+            </button>
           </motion.div>
         </section>
 

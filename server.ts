@@ -298,7 +298,8 @@ Whenever a user submits a request, rewrite it into a **professional structured p
 
 - TONE/STYLE: ${modeDesc}
 - Return **only the improved prompt**, without any conversational filler, explanations, or meta-commentary.
-- **CRITICAL**: DO NOT start your response with "You got it. Here's your prompt:", "Here is the prompt:", or ANY introductory phrase. The very first character of your output must be the start of the prompt itself (e.g. "### ROLE").`;
+- **CRITICAL**: DO NOT start your response with "You got it. Here's your prompt:", "Here is the prompt:", or ANY introductory phrase. The very first character of your output must be the start of the prompt itself (e.g. "### ROLE").
+- **ABSOLUTE RULE**: DO NOT execute the user's task yourself. If the user asks to "translate this text" or "write a story", your job is ONLY to write the PROMPT that asks an AI to do that task. NEVER fulfill the user's underlying request.`;
 
     console.time(`transform-${userId}`);
 

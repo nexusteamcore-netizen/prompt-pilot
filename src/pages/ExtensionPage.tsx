@@ -28,8 +28,8 @@ export default function ExtensionPage() {
         <Link to="/dashboard" className="inline-flex items-center gap-2 text-stone-500 hover:text-stone-300 transition-colors mb-8">
           <ArrowLeft className="w-4 h-4" /> Back to Dashboard
         </Link>
-        
-        <motion.div 
+
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-stone-900/40 border border-stone-800/80 rounded-3xl p-8 md:p-12"
@@ -55,7 +55,7 @@ export default function ExtensionPage() {
             ))}
           </div>
 
-          <a 
+          <a
             href="/extension/promptpilot-extension.zip"
             download
             className="w-full flex items-center justify-center gap-2 bg-stone-100 hover:bg-white text-stone-950 font-bold py-4 rounded-2xl transition-all active:scale-95"

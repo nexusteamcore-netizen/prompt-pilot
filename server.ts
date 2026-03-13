@@ -237,13 +237,13 @@ app.post("/api/transform", authenticate, async (req, res) => {
 Instead of writing a rigid, robotic 10-point list, craft a naturally flowing prompt using this structure:
 1. Context & Role: A natural introductory paragraph assigning the persona and setting the scene.
 2. Objective: What exactly needs to be done.
-3. Length/Scope: Specific constraints (e.g., word count, budget, limit).
-4. Structure/Format: How the output should be organized (e.g., Markdown headers, tables).
+3. Length/Scope: Specific constraints (e.g., word count, budget, limit, timeframe).
+4. Output Format (CRITICAL): Enforce a highly organized output structure. Explicitly mandate the use of Markdown tables (e.g., for schedules/timelines), bulleted lists (for tasks/exercises), and specific detail breakdowns (e.g., requiring Goal, Skills, and Expected Outcome for any project or step).
 5. Guidelines: Bullet points combining reasoning, tone, and quality criteria.
 6. Optional Input: A clear [PLACEHOLDER] for the user's specific data.
 
 RULES: 
-- DO NOT literally write "1. Context", "2. Role" in the prompt. Use clean headers like "Objective:", "Structure:", "Guidelines:".
+- DO NOT literally write "1. Context", "2. Role" in the prompt. Use clean headers like "Objective:", "Output Format:", "Guidelines:".
 - Keep it punchy and creative. 150–350 words max.
 - Output ONLY the final prompt. No intro or outro.
 - Tone: ${modeDesc}.`;

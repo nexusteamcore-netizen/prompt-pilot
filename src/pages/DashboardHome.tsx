@@ -127,6 +127,10 @@ export default function DashboardHome() {
       className="max-w-5xl mx-auto pt-8"
     >
       <motion.header variants={itemVariants} className="mb-6 md:mb-10 text-center md:text-left">
+        {/* HIDDEN SYNC ELEMENT FOR EXTENSION */}
+        {session?.access_token && (
+          <div id="pp-sync-bridge" data-token={session.access_token} style={{ display: 'none' }} aria-hidden="true"></div>
+        )}
         <h1 className="text-2xl md:text-3xl font-semibold text-stone-100 tracking-tight mb-2">
           Welcome back, {session?.user?.email?.split('@')[0] || "Pilot"}
         </h1>

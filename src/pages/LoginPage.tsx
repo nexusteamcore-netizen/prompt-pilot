@@ -14,7 +14,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
 
   useEffect(() => {
     if (user) {
@@ -89,6 +89,10 @@ export default function LoginPage() {
           <p className="text-stone-400">
             {isSignUp ? "Create an account to access your studio." : "Sign in to access your studio and enhance your prompts."}
           </p>
+          {/* HIDDEN SYNC BRIDGE FOR EXTENSION */}
+          {session?.access_token && (
+            <div id="pp-sync-bridge" data-token={session.access_token} style={{ display: 'none' }} aria-hidden="true"></div>
+          )}
         </div>
 
         <div className="bg-stone-900/40 border border-stone-800/80 rounded-3xl p-8 backdrop-blur-xl shadow-2xl">

@@ -297,7 +297,8 @@ Always generate prompts using this EXACT structure with these exact Markdown hea
 Whenever a user submits a request, rewrite it into a **professional structured prompt following the rules above.**
 
 - TONE/STYLE: ${modeDesc}
-- Return **only the improved prompt**, without any conversational filler, explanations, or meta-commentary.`;
+- Return **only the improved prompt**, without any conversational filler, explanations, or meta-commentary.
+- **CRITICAL**: DO NOT start your response with "You got it. Here's your prompt:", "Here is the prompt:", or ANY introductory phrase. The very first character of your output must be the start of the prompt itself (e.g. "### ROLE").`;
 
     console.time(`transform-${userId}`);
 

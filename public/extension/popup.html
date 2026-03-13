@@ -1,168 +1,210 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PromptPilot</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 320px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0c0c0c;
+      color: #e5e5e5;
+      min-height: 200px;
     }
 
-    body {
-      width: 280px;
-      background: #0c0a09;
-      color: #d6d3d1;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      padding: 16px;
-    }
+    .container { padding: 20px; }
 
     .header {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-      padding-bottom: 14px;
-      border-bottom: 1px solid #292524;
-    }
-
-    .brand {
-      display: flex;
       align-items: center;
       gap: 10px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #1f1f1f;
     }
 
     .logo {
       width: 32px;
       height: 32px;
-      background: #f5f5f4;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
       border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
-      color: #0c0a09;
     }
 
-    .header h1 {
-      font-size: 14px;
-      font-weight: 700;
-      color: #f5f5f4;
+    .header h1 { font-size: 15px; font-weight: 600; color: #f5f5f4; }
+    .header span { font-size: 11px; color: #57534e; }
+
+    /* Login Form */
+    #login-section input {
+      width: 100%;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #e5e5e5;
+      font-size: 13px;
+      margin-bottom: 8px;
+      outline: none;
+      transition: border-color 0.2s;
     }
+    #login-section input:focus { border-color: #44403c; }
+    #login-section input::placeholder { color: #57534e; }
+
+    .btn-primary {
+      width: 100%;
+      background: #f5f5f4;
+      color: #0c0c0c;
+      border: none;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 4px;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn-primary:hover { background: #fff; }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Logged In Section */
+    #logged-in-section { display: none; }
 
     .status-badge {
       display: flex;
       align-items: center;
-      gap: 6px;
-      font-size: 10px;
-      background: #1c1917;
-      padding: 4px 8px;
-      border-radius: 20px;
-      border: 1px solid #292524;
+      gap: 8px;
+      background: #0d1f13;
+      border: 1px solid #14532d;
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+      font-size: 12px;
+      color: #86efac;
     }
 
-    .status-dot {
-      width: 6px;
-      height: 6px;
-      background: #78716c;
+    .dot-green {
+      width: 7px; height: 7px;
+      background: #22c55e;
       border-radius: 50%;
+      box-shadow: 0 0 6px #22c55e;
+      flex-shrink: 0;
     }
 
-    .section-label {
-      font-size: 10px;
-      font-weight: 600;
+    .user-email {
+      font-size: 11px;
+      color: #78716c;
+      text-align: center;
+      margin-bottom: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Mode selector */
+    .mode-label {
+      font-size: 11px;
+      color: #78716c;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      color: #57534e;
       margin-bottom: 8px;
     }
 
-    .mode-select {
-      width: 100%;
-      background: #1c1917;
-      border: 1px solid #292524;
-      color: #d6d3d1;
+    .mode-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .mode-btn {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
       border-radius: 8px;
-      padding: 8px 10px;
-      font-size: 13px;
+      padding: 8px;
+      font-size: 12px;
+      color: #a8a29e;
       cursor: pointer;
-      margin-bottom: 14px;
-      outline: none;
-    }
-
-    .usage-card {
-      background: #1c1917;
-      border: 1px solid #292524;
-      border-radius: 10px;
-      padding: 12px;
-      margin-bottom: 12px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .usage-label {
-      font-size: 11px;
-      color: #78716c;
-    }
-
-    .usage-count {
-      font-size: 18px;
-      font-weight: 700;
-      color: #f5f5f4;
-    }
-
-    .dashboard-btn {
-      display: block;
-      width: 100%;
+      transition: all 0.15s;
       text-align: center;
-      background: #f5f5f4;
-      color: #0c0a09;
-      border-radius: 8px;
-      padding: 9px;
-      font-size: 13px;
+    }
+
+    .mode-btn:hover { border-color: #44403c; color: #e5e5e5; }
+    .mode-btn.active {
+      background: #1c1917;
+      border-color: #57534e;
+      color: #f5f5f4;
       font-weight: 600;
-      text-decoration: none;
+    }
+
+    .btn-logout {
+      width: 100%;
+      background: transparent;
+      border: 1px solid #1f1f1f;
+      border-radius: 10px;
+      padding: 8px;
+      font-size: 12px;
+      color: #57534e;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-logout:hover { border-color: #ef4444; color: #ef4444; }
+
+    .error-msg {
+      color: #f87171;
+      font-size: 12px;
+      text-align: center;
+      margin-top: 8px;
+      display: none;
     }
   </style>
 </head>
-
 <body>
-  <div class="header">
-    <div class="brand">
-      <div class="logo">✦</div>
-      <h1>PromptPilot</h1>
+  <div class="container">
+    <div class="header">
+      <div class="logo">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f5f5f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2C12 2 17 8 17 13C17 18 12 21 12 21C12 21 7 18 7 13C7 8 12 2 12 2Z"/>
+          <path d="M12 8V13"/>
+        </svg>
+      </div>
+      <div>
+        <h1>PromptPilot</h1>
+        <span>AI Prompt Enhancer</span>
+      </div>
     </div>
-    <div class="status-badge">
-      <div id="status-dot" class="status-dot"></div>
-      <span id="status-text">Checking...</span>
+
+    <!-- Login Section -->
+    <div id="login-section">
+      <input type="email" id="email-input" placeholder="Email address" autocomplete="email" />
+      <input type="password" id="password-input" placeholder="Password" autocomplete="current-password" />
+      <button class="btn-primary" id="login-btn">Sign In</button>
+      <div class="error-msg" id="error-msg"></div>
+    </div>
+
+    <!-- Logged In Section -->
+    <div id="logged-in-section">
+      <div class="status-badge">
+        <div class="dot-green"></div>
+        Active — Ready to enhance
+      </div>
+      <div class="user-email" id="user-email-display"></div>
+      <div class="mode-label">Enhancement Mode</div>
+      <div class="mode-grid">
+        <button class="mode-btn active" data-mode="professional">Professional</button>
+        <button class="mode-btn" data-mode="creative">Creative</button>
+        <button class="mode-btn" data-mode="technical">Technical</button>
+        <button class="mode-btn" data-mode="concise">Concise</button>
+      </div>
+      <button class="btn-logout" id="logout-btn">Sign Out</button>
     </div>
   </div>
-
-  <div class="section-label">Prompt Mode</div>
-  <select id="mode" class="mode-select">
-    <option value="professional">Professional</option>
-    <option value="concise">Concise</option>
-    <option value="friendly">Friendly</option>
-    <option value="creative">Creative</option>
-  </select>
-
-  <div class="usage-card">
-    <div>
-      <div class="usage-label">Daily Usage</div>
-      <div class="usage-count" id="usage-count">—</div>
-    </div>
-    <div style="font-size: 22px; opacity: 0.3;">⚡</div>
-  </div>
-
-  <a href="#" id="go-dashboard" class="dashboard-btn" target="_blank">
-    Sign In / Dashboard →
-  </a>
 
   <script src="popup.js"></script>
 </body>
-
 </html>

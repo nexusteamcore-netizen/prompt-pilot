@@ -181,6 +181,31 @@ const authenticate = (req: express.Request, res: express.Response, next: express
 };
 
 // API Routes
+
+// Extension Direct Login - Called from popup.js
+app.post("/api/ext-login", async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: "Email and password required" });
+  }
+
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return res.status(500).json({ error: "Database not configured" });
+  }
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error || !data.session) {
+    return res.status(401).json({ error: error?.message || "Login failed" });
+  }
+
+  return res.json({
+    access_token: data.session.access_token,
+    email: data.user?.email
+  });
+});
+
 app.post("/api/transform", authenticate, async (req, res) => {
   try {
     const { text, mode, context } = req.body;

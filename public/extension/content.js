@@ -93,7 +93,7 @@ function createBadge() {
             console.log("PromptPilot: Response received from background:", !!response);
             if (response?.error) {
                 console.error("PromptPilot API Error:", response.error);
-                showFeedback(response.error.includes("Login") ? "Click extension icon to sign in!" : "Error", "#ef4444");
+                showFeedback(response.error.includes("Login") ? "Login at PromptPilot website first!" : "Error", "#ef4444");
             } else if (response?.transformed) {
                 injectText(response.transformed);
                 showFeedback("Done! ✨", "#10b981");

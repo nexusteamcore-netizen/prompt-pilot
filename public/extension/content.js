@@ -75,7 +75,6 @@ function createBadge() {
 
         ppBadge.classList.add("enhancing");
         ppBadge.innerHTML = `<span class="pp-spinner"></span>`;
-        showFeedback("Enhancing...", "#3b82f6");
 
         // ⚡ Use cached mode — no storage read needed
         console.log("PromptPilot: Sending message to background for mode:", cachedMode);
@@ -96,7 +95,6 @@ function createBadge() {
                 showFeedback(response.error.includes("Login") ? "Login at PromptPilot website first!" : "Error", "#ef4444");
             } else if (response?.transformed) {
                 injectText(response.transformed);
-                showFeedback("Done! ✨", "#10b981");
             } else {
                 showFeedback("No response", "#ef4444");
             }

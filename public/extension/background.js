@@ -1,5 +1,3 @@
-const SITE_URL = "https://prompt-pilot-lime.vercel.app/dashboard";
-
 // ── Main Message Router ─────────────────────────────────────────
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.type === "TRANSFORM_PROMPT") {
@@ -30,11 +28,11 @@ async function resolveToken() {
         return fromTab.token;
     }
 
-    // Layer 3: Open a silent background tab, grab token, close it
-    const fromBg = await getTokenFromBackgroundTab();
-    if (fromBg) {
-        await chrome.storage.local.set({ pp_token: fromBg, pp_base_url: "https://prompt-pilot-lime.vercel.app" });
-        return fromBg;
+    // Layer 3: Open a silent background tab iteratively, grab token, close it
+    const fromBg = await getFromBackgroundTabs();
+    if (fromBg && fromBg.token) {
+        await chrome.storage.local.set({ pp_token: fromBg.token, pp_base_url: fromBg.baseUrl });
+        return fromBg.token;
     }
 
     return null;
@@ -56,19 +54,22 @@ async function getTokenFromOpenTab() {
     } catch { return null; }
 }
 
+const SITE_URLS = [
+    "http://localhost:3000/dashboard",
+    "https://prompt-pilot-lime.vercel.app/dashboard"
+];
+
 // Open a background tab silently, grab token, close it
-function getTokenFromBackgroundTab() {
+function getTokenFromBackgroundTab(url) {
     return new Promise((resolve) => {
-        console.log("PromptPilot [BG]: Opening silent background tab...");
-        
-        chrome.tabs.create({ url: SITE_URL, active: false }, (tab) => {
-            if (!tab) { resolve(null); return; }
+        chrome.tabs.create({ url, active: false }, (tab) => {
+            if (!tab || !tab.id) { resolve(null); return; }
             
             const timeout = setTimeout(() => {
                 chrome.tabs.onUpdated.removeListener(listener);
                 chrome.tabs.remove(tab.id).catch(() => {});
                 resolve(null);
-            }, 10000); // 10s timeout
+            }, 8000); // 8s timeout per url
 
             const listener = (tabId, changeInfo) => {
                 if (tabId !== tab.id || changeInfo.status !== "complete") return;
@@ -81,8 +82,7 @@ function getTokenFromBackgroundTab() {
                 }).then(results => {
                     chrome.tabs.remove(tab.id).catch(() => {});
                     const result = results[0]?.result;
-                    console.log("PromptPilot [BG]: Background tab result:", !!result?.token);
-                    resolve(result?.token || null);
+                    resolve(result || null);
                 }).catch(() => {
                     chrome.tabs.remove(tab.id).catch(() => {});
                     resolve(null);
@@ -92,6 +92,18 @@ function getTokenFromBackgroundTab() {
             chrome.tabs.onUpdated.addListener(listener);
         });
     });
+}
+
+async function getFromBackgroundTabs() {
+    console.log("PromptPilot [BG]: Opening silent background tabs to find token...");
+    for (const url of SITE_URLS) {
+        const result = await getTokenFromBackgroundTab(url);
+        if (result && result.token) {
+            console.log(`PromptPilot [BG]: Found token via background tab at ${url}`);
+            return result;
+        }
+    }
+    return null;
 }
 
 // This function runs inside the target tab. MUST be self-contained.

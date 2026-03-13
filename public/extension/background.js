@@ -69,7 +69,7 @@ function getTokenFromBackgroundTab(url) {
                 chrome.tabs.onUpdated.removeListener(listener);
                 chrome.tabs.remove(tab.id).catch(() => {});
                 resolve(null);
-            }, 8000); // 8s timeout per url
+            }, 2500); // Super fast 2.5s timeout per url
 
             const listener = (tabId, changeInfo) => {
                 if (tabId !== tab.id || changeInfo.status !== "complete") return;
@@ -95,13 +95,15 @@ function getTokenFromBackgroundTab(url) {
 }
 
 async function getFromBackgroundTabs() {
-    console.log("PromptPilot [BG]: Opening silent background tabs to find token...");
-    for (const url of SITE_URLS) {
-        const result = await getTokenFromBackgroundTab(url);
-        if (result && result.token) {
-            console.log(`PromptPilot [BG]: Found token via background tab at ${url}`);
-            return result;
-        }
+    console.log("PromptPilot [BG]: Opening silent background tabs in parallel...");
+    // ⚡ Execute all checks at once to avoid 8s+ sequential delay
+    const results = await Promise.all(SITE_URLS.map(url => getTokenFromBackgroundTab(url)));
+    
+    // Find the first successful token fetch
+    const success = results.find(res => res && res.token);
+    if (success) {
+        console.log(`PromptPilot [BG]: Found token via background tab!`);
+        return success;
     }
     return null;
 }

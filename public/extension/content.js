@@ -2,6 +2,17 @@ let lastFocusedInput = null;
 let ppBadge = null;
 let isDragging = false;
 let startX, startY;
+let cachedMode = "professional"; // Cache mode — updated once on load
+
+// Pre-load mode setting once (not on every click)
+chrome.storage.local.get(["pp_mode"], (data) => {
+    if (data.pp_mode) cachedMode = data.pp_mode;
+});
+
+// Listen for mode changes from popup
+chrome.storage.onChanged.addListener((changes) => {
+    if (changes.pp_mode) cachedMode = changes.pp_mode.newValue || "professional";
+});
 
 const inputSelectors = [
     '#prompt-textarea',
@@ -41,7 +52,6 @@ function createBadge() {
 
     document.body.appendChild(ppBadge);
 
-    // Click to enhance
     ppBadge.addEventListener("click", async (e) => {
         e.stopPropagation();
         if (isDragging) return;
@@ -67,41 +77,33 @@ function createBadge() {
         ppBadge.innerHTML = `<span class="pp-spinner"></span>`;
         showFeedback("Enhancing...", "#3b82f6");
 
-        try {
-            console.log("PromptPilot: Fetching settings from storage...");
-            const storage = await chrome.storage.local.get(["pp_mode"]);
-            const mode = storage.pp_mode || "professional";
-
-            console.log("PromptPilot: Sending message to background for mode:", mode);
-            chrome.runtime.sendMessage({
-                type: "TRANSFORM_PROMPT",
-                data: { text, mode }
-            }, (response) => {
-                if (chrome.runtime.lastError) {
-                    console.error("Runtime error:", chrome.runtime.lastError.message);
-                    showFeedback("Service Error — Refresh page", "#ef4444");
-                    resetBadge();
-                    return;
-                }
-
-                console.log("PromptPilot: Response received from background:", !!response);
-                if (response?.error) {
-                    console.error("PromptPilot API Error:", response.error);
-                    showFeedback(response.error.includes("Login") ? "Sign in from extension popup!" : "Error: " + response.error, "#ef4444");
-                } else if (response?.transformed) {
-                    injectText(response.transformed);
-                    showFeedback("Done! ✨", "#10b981");
-                } else {
-                    showFeedback("No response", "#ef4444");
-                }
+        // ⚡ Use cached mode — no storage read needed
+        console.log("PromptPilot: Sending message to background for mode:", cachedMode);
+        chrome.runtime.sendMessage({
+            type: "TRANSFORM_PROMPT",
+            data: { text, mode: cachedMode }
+        }, (response) => {
+            if (chrome.runtime.lastError) {
+                console.error("Runtime error:", chrome.runtime.lastError.message);
+                showFeedback("Service Error — Refresh page", "#ef4444");
                 resetBadge();
-            });
-        } catch (err) {
-            console.error("PromptPilot Task Error:", err);
-            showFeedback("Error", "#ef4444");
+                return;
+            }
+
+            console.log("PromptPilot: Response received from background:", !!response);
+            if (response?.error) {
+                console.error("PromptPilot API Error:", response.error);
+                showFeedback(response.error.includes("Login") ? "Click extension icon to sign in!" : "Error", "#ef4444");
+            } else if (response?.transformed) {
+                injectText(response.transformed);
+                showFeedback("Done! ✨", "#10b981");
+            } else {
+                showFeedback("No response", "#ef4444");
+            }
             resetBadge();
-        }
+        });
     });
+});
 
     // Drag support
     ppBadge.addEventListener("mousedown", (e) => {

@@ -219,55 +219,43 @@ app.post("/api/transform", authenticate, async (req, res) => {
     const userId = (req as any).user?.sub || (req as any).user?.id;
     const authHeader = req.headers.authorization;
 
-    // Run usage check and profile check in parallel with AI call for speed
-    const supabase = getSupabaseClient(authHeader);
-    if (!supabase) return res.status(500).json({ error: "Database configuration missing" });
-    
-    const today = new Date().toISOString().split('T')[0];
-
-    // Get both profile (for plan) and usage logs
-    const profilePromise = supabase.from('profiles').select('plan').eq('id', userId).single();
-    const usageCheckPromise = supabase
-      .from('usage_logs')
-      .select('count')
-      .eq('user_id', userId)
-      .eq('date', today);
-
-    const modeDefinitions: Record<string, string> = {
-      professional: "Formal, balanced, and business-focused. Ideal for workplace communication and standard AI tasks.",
-      creative: "Imaginative and expressive. Encourages the AI to explore metaphors, storytelling, and non-linear thinking.",
-      technical: "Precise, spec-heavy, and logical. Focuses on code, architecture, data, and rigorous constraints.",
-      academic: "Scholarly and analytical. Uses high-level vocabulary, objective tone, and structure suitable for research.",
-      simple: "Clear, plain English, and accessible. Strips away jargon to focus on the most direct and easy-to-understand response.",
-      detailed: "Exhaustive and multi-layered. Breaks the task into many sub-components for a comprehensive result.",
-      concise: "Ultra-brief and efficient. No fluff, only the essential instructions in the shortest possible form.",
-      friendly: "Warm, approachable, and encouraging. Uses a supportive tone while maintaining task clarity.",
-      direct: "No-nonsense and assertive. Commands the AI with maximum authority and zero pleasantries."
+    const modeDescriptions: Record<string, string> = {
+      professional: "formal, business-focused",
+      creative: "imaginative, expressive, metaphor-rich",
+      technical: "precise, spec-heavy, code-ready",
+      academic: "scholarly, analytical, research-grade",
+      concise: "ultra-brief, no fluff",
+      friendly: "warm, supportive, approachable",
+      direct: "assertive, no-nonsense"
     };
 
+    const modeDesc = modeDescriptions[mode || "professional"] || modeDescriptions.professional;
+
+    // ⚡ FIRE AI CALL FIRST — then start DB checks in parallel
+    const systemInstruction = `You are PromptPilot, an expert AI Prompt Engineer. Rewrite the user's input as a powerful, structured prompt.
+
+APPLY ALL 10 POINTS — woven naturally into the output (do NOT list them):
+1. Context: domain + background
+2. Role: specific expert persona
+3. Task: one clear action-oriented goal
+4. Scope: EXACT numbers (words, budget, timeframe, quantity)
+5. Format: Markdown tables/headers/lists as needed
+6. Input Data: add [PLACEHOLDER] for user's specific data
+7. Example: 1 short 2-line example of ideal output style
+8. Reasoning: "Think step by step" for analytical tasks
+9. Quality: 3 bullet criteria for a good answer
+10. Validation: 1 line — ask AI to verify before responding
+
+RULES: Output ONLY the final prompt. No intro. 200–350 words max. Tone: ${modeDesc}.`;
+
     console.time(`transform-${userId}`);
-    const systemInstruction = `You are PromptPilot — an elite AI Prompt Engineer. Transform the user's rough input into a sharp, structured prompt using the 10-Point Framework below.
 
-## THE 10 POINTS (apply ALL of them):
-1. **Context**: Set the scene — domain, background, who the user is.
-2. **Role**: Assign a specific world-class expert persona to the AI.
-3. **Task**: One clear, action-oriented sentence stating the primary goal.
-4. **Scope & Constraints**: Include SPECIFIC numbers (word counts, quantities, timeframes, budgets). Set clear limits. NO vague ranges.
-5. **Output Format**: Specify exact structure — use Markdown headers, tables, numbered lists, or code blocks as appropriate.
-6. **Input Data**: Always include a clear placeholder like [INSERT YOUR DATA HERE] so the user knows where to put their specific info.
-7. **Few-Shot Example**: Add 1 short example showing the desired output style/format (2-4 lines max).
-8. **Reasoning**: Add "Think step by step before answering." if the task involves analysis or logic.
-9. **Quality Criteria**: 3 bullet points max defining what a good answer looks like.
-10. **Validation**: One line asking the AI to verify its output before responding.
-
-## CRITICAL RULES:
-- Output ONLY the final engineered prompt. No preamble, no "Here is your prompt:".
-- LENGTH: 200–400 words. Never exceed 400 words. Concise is powerful.
-- NUMBERS: Always specify concrete numbers (e.g., "500 words", "3 options", "within a $5,000 budget").
-- DATA INPUTS: Always add at least one [PLACEHOLDER] so the user fills in their specific data.
-- NARRATIVE: Don't list the 10 points explicitly — weave them into natural, flowing instructions.
-
-Mode: ${modeDefinitions[mode || "professional"] || modeDefinitions.professional}`;
+    // ⚡ Start DB checks in background — don't wait before firing AI
+    const supabase = getSupabaseClient(authHeader);
+    if (!supabase) return res.status(500).json({ error: "Database configuration missing" });
+    const today = new Date().toISOString().split('T')[0];
+    const profilePromise = supabase.from('profiles').select('plan').eq('id', userId).single();
+    const usageCheckPromise = supabase.from('usage_logs').select('count').eq('user_id', userId).eq('date', today);
 
     const modelName = "google/gemini-2.0-flash-001";
 
@@ -290,8 +278,9 @@ Mode: ${modeDefinitions[mode || "professional"] || modeDefinitions.professional}
           { role: "system", content: systemInstruction },
           { role: "user", content: text }
         ],
-        temperature: 0.7,
-        max_tokens: 800
+        temperature: 0.4,
+        top_p: 0.85,
+        max_tokens: 550
       })
     });
 

@@ -1,7 +1,4 @@
-const SITE_URLS = [
-    "https://prompt-pilot-lime.vercel.app/*",
-    "http://localhost:3000/*"
-];
+const SITE_URL = "https://prompt-pilot-lime.vercel.app/dashboard";
 
 // ── Main Message Router ─────────────────────────────────────────
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -13,81 +10,124 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 
     if (request.type === "GET_TOKEN_FROM_SITE") {
-        getTokenFromSiteTab()
-            .then(sendResponse)
+        resolveToken()
+            .then(token => sendResponse({ token }))
             .catch(() => sendResponse({ token: null }));
         return true;
     }
 });
 
-// ── Auto-detect token from open website tab ─────────────────────
-async function getTokenFromSiteTab() {
+// ── Token resolution (3 layers) ─────────────────────────────────
+async function resolveToken() {
+    // Layer 1: Already in storage
+    const storage = await chrome.storage.local.get(["pp_token"]);
+    if (storage.pp_token) return storage.pp_token;
+
+    // Layer 2: Open website tab found
+    const fromTab = await getTokenFromOpenTab();
+    if (fromTab) {
+        await chrome.storage.local.set({ pp_token: fromTab.token, pp_base_url: fromTab.baseUrl });
+        return fromTab.token;
+    }
+
+    // Layer 3: Open a silent background tab, grab token, close it
+    const fromBg = await getTokenFromBackgroundTab();
+    if (fromBg) {
+        await chrome.storage.local.set({ pp_token: fromBg, pp_base_url: "https://prompt-pilot-lime.vercel.app" });
+        return fromBg;
+    }
+
+    return null;
+}
+
+// Inject script into any already-open site tab
+async function getTokenFromOpenTab() {
     const tabs = await chrome.tabs.query({
         url: ["https://prompt-pilot-lime.vercel.app/*", "http://localhost:3000/*"]
     });
-
-    if (!tabs || tabs.length === 0) {
-        console.log("PromptPilot [BG]: No website tab found.");
-        return { token: null };
-    }
-
-    console.log("PromptPilot [BG]: Website tab found, injecting script...");
+    if (!tabs?.length) return null;
 
     try {
         const results = await chrome.scripting.executeScript({
             target: { tabId: tabs[0].id },
-            func: () => {
-                // Scan all storages for Supabase token
-                const stores = [localStorage, sessionStorage];
-                for (const store of stores) {
-                    for (let i = 0; i < store.length; i++) {
-                        const key = store.key(i);
-                        if (!key) continue;
-                        if (key.includes("-auth-token") || key.includes("supabase.auth")) {
-                            try {
-                                const raw = store.getItem(key);
-                                if (!raw) continue;
-                                const data = JSON.parse(raw);
-                                const token = data.access_token || data.currentSession?.access_token;
-                                if (token) {
-                                    return {
-                                        token,
-                                        email: data.user?.email || "",
-                                        baseUrl: window.location.origin
-                                    };
-                                }
-                            } catch {}
-                        }
-                    }
-                }
-                return { token: null };
-            }
+            func: readTokenFromStorage
         });
-        return results[0]?.result || { token: null };
-    } catch (err) {
-        console.error("PromptPilot [BG]: Script injection failed:", err.message);
-        return { token: null };
-    }
+        return results[0]?.result || null;
+    } catch { return null; }
 }
 
-// ── Transform Handler ───────────────────────────────────────────
+// Open a background tab silently, grab token, close it
+function getTokenFromBackgroundTab() {
+    return new Promise((resolve) => {
+        console.log("PromptPilot [BG]: Opening silent background tab...");
+        
+        chrome.tabs.create({ url: SITE_URL, active: false }, (tab) => {
+            if (!tab) { resolve(null); return; }
+            
+            const timeout = setTimeout(() => {
+                chrome.tabs.onUpdated.removeListener(listener);
+                chrome.tabs.remove(tab.id).catch(() => {});
+                resolve(null);
+            }, 10000); // 10s timeout
+
+            const listener = (tabId, changeInfo) => {
+                if (tabId !== tab.id || changeInfo.status !== "complete") return;
+                chrome.tabs.onUpdated.removeListener(listener);
+                clearTimeout(timeout);
+
+                chrome.scripting.executeScript({
+                    target: { tabId: tab.id },
+                    func: readTokenFromStorage
+                }).then(results => {
+                    chrome.tabs.remove(tab.id).catch(() => {});
+                    const result = results[0]?.result;
+                    console.log("PromptPilot [BG]: Background tab result:", !!result?.token);
+                    resolve(result?.token || null);
+                }).catch(() => {
+                    chrome.tabs.remove(tab.id).catch(() => {});
+                    resolve(null);
+                });
+            };
+
+            chrome.tabs.onUpdated.addListener(listener);
+        });
+    });
+}
+
+// This function runs inside the target tab. MUST be self-contained.
+function readTokenFromStorage() {
+    const stores = [localStorage, sessionStorage];
+    for (const store of stores) {
+        for (let i = 0; i < store.length; i++) {
+            const key = store.key(i);
+            if (!key) continue;
+            if (key.includes("-auth-token") || key.includes("supabase.auth")) {
+                try {
+                    const data = JSON.parse(store.getItem(key));
+                    const token = data?.access_token || data?.currentSession?.access_token;
+                    if (token) return { token, baseUrl: window.location.origin, email: data?.user?.email || "" };
+                } catch {}
+            }
+        }
+    }
+    return null;
+}
+
+// ── Transform ───────────────────────────────────────────────────
 async function handleTransformation({ text, mode }) {
     const storage = await chrome.storage.local.get(["pp_token", "pp_base_url"]);
     let token = storage.pp_token;
     let BASE_URL = storage.pp_base_url || "https://prompt-pilot-lime.vercel.app";
 
-    // Auto-refresh token from site tab if missing
     if (!token) {
-        console.log("PromptPilot [BG]: No token in storage, trying website tab...");
-        const result = await getTokenFromSiteTab();
-        if (result?.token) {
-            token = result.token;
-            BASE_URL = result.baseUrl || BASE_URL;
-            await chrome.storage.local.set({ pp_token: token, pp_base_url: BASE_URL });
-            console.log("PromptPilot [BG]: Auto-synced token from site!");
-        } else {
-            throw new Error("Login Required: Please open the PromptPilot website and sign in.");
-        }
+        console.log("PromptPilot [BG]: No token, auto-resolving...");
+        token = await resolveToken();
+        const s = await chrome.storage.local.get(["pp_base_url"]);
+        BASE_URL = s.pp_base_url || BASE_URL;
+    }
+
+    if (!token) {
+        throw new Error("Login Required: Please open the PromptPilot website and sign in first.");
     }
 
     const response = await fetch(`${BASE_URL}/api/transform`, {
@@ -101,7 +141,11 @@ async function handleTransformation({ text, mode }) {
 
     if (!response.ok) {
         const err = await response.text();
-        throw new Error(`Server Error ${response.status}: ${err}`);
+        // Clear bad token if 401
+        if (response.status === 401) {
+            await chrome.storage.local.remove(["pp_token"]);
+        }
+        throw new Error(`Server Error ${response.status}`);
     }
 
     return await response.json();

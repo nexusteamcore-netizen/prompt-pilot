@@ -1,61 +1,80 @@
 const BASE_URL = "https://prompt-pilot-lime.vercel.app";
 
-const loginSection = document.getElementById("login-section");
-const loggedInSection = document.getElementById("logged-in-section");
-const loginBtn = document.getElementById("login-btn");
-const logoutBtn = document.getElementById("logout-btn");
-const emailInput = document.getElementById("email-input");
-const passwordInput = document.getElementById("password-input");
-const errorMsg = document.getElementById("error-msg");
-const userEmailDisplay = document.getElementById("user-email-display");
+// Sections
+const sLoading = document.getElementById("s-loading");
+const sConnected = document.getElementById("s-connected");
+const sNosite = document.getElementById("s-nosite");
+const sLogin = document.getElementById("s-login");
 
-function showError(msg) {
-  errorMsg.textContent = msg;
-  errorMsg.style.display = "block";
+function show(el) {
+  [sLoading, sConnected, sNosite, sLogin].forEach(s => s.style.display = "none");
+  el.style.display = "block";
 }
 
-function hideError() {
-  errorMsg.style.display = "none";
+function showConnected(email) {
+  document.getElementById("disp-email").textContent = email || "";
+  show(sConnected);
 }
 
-function showLoggedIn(email) {
-  loginSection.style.display = "none";
-  loggedInSection.style.display = "block";
-  userEmailDisplay.textContent = email || "";
-}
+// ── On popup open ────────────────────────────────────────────────
+show(sLoading);
 
-function showLoginForm() {
-  loginSection.style.display = "block";
-  loggedInSection.style.display = "none";
-}
-
-// On popup open, check if already logged in
-chrome.storage.local.get(["pp_token", "pp_email", "pp_mode"], (data) => {
+chrome.storage.local.get(["pp_token", "pp_email", "pp_mode"], async (data) => {
   if (data.pp_token) {
-    showLoggedIn(data.pp_email || "");
-    // Highlight active mode
-    const currentMode = data.pp_mode || "professional";
-    document.querySelectorAll(".mode-btn").forEach(btn => {
-      btn.classList.toggle("active", btn.dataset.mode === currentMode);
-    });
-  } else {
-    showLoginForm();
-  }
-});
-
-// Login handler
-loginBtn.addEventListener("click", async () => {
-  const email = emailInput.value.trim();
-  const password = passwordInput.value.trim();
-  hideError();
-
-  if (!email || !password) {
-    showError("Please enter email and password.");
+    // Already have a saved token
+    showConnected(data.pp_email || "");
+    if (data.pp_mode) highlightMode(data.pp_mode);
     return;
   }
 
-  loginBtn.disabled = true;
-  loginBtn.textContent = "Signing in...";
+  // Try to auto-detect from open website tab
+  chrome.runtime.sendMessage({ type: "GET_TOKEN_FROM_SITE" }, (resp) => {
+    if (resp?.token) {
+      chrome.storage.local.set({
+        pp_token: resp.token,
+        pp_email: resp.email || "",
+        pp_base_url: resp.baseUrl || BASE_URL,
+        pp_mode: "professional"
+      }, () => showConnected(resp.email || "Auto-connected ✓"));
+    } else {
+      // Show no-site screen
+      show(sNosite);
+    }
+  });
+});
+
+// ── Mode selection ───────────────────────────────────────────────
+function highlightMode(mode) {
+  document.querySelectorAll(".mode-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.mode === mode);
+  });
+}
+
+document.querySelectorAll(".mode-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    highlightMode(btn.dataset.mode);
+    chrome.storage.local.set({ pp_mode: btn.dataset.mode });
+  });
+});
+
+// ── Logout ───────────────────────────────────────────────────────
+document.getElementById("btn-logout").addEventListener("click", () => {
+  chrome.storage.local.remove(["pp_token", "pp_email", "pp_mode", "pp_base_url"], () => {
+    show(sNosite);
+  });
+});
+
+// ── Open website button ──────────────────────────────────────────
+document.getElementById("btn-open-site").addEventListener("click", () => {
+  chrome.tabs.create({ url: BASE_URL + "/dashboard" });
+  window.close();
+});
+
+// ── Manual login (from s-nosite) ─────────────────────────────────
+async function doLogin(email, password, errEl, btnEl) {
+  errEl.style.display = "none";
+  if (!email || !password) { errEl.textContent = "Fill in email and password."; errEl.style.display = "block"; return; }
+  btnEl.disabled = true; btnEl.textContent = "Signing in...";
 
   try {
     const res = await fetch(`${BASE_URL}/api/ext-login`, {
@@ -63,54 +82,44 @@ loginBtn.addEventListener("click", async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password })
     });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || "Login failed");
 
-    const data = await res.json();
-
-    if (!res.ok) {
-      showError(data.error || "Login failed. Check your credentials.");
-      loginBtn.disabled = false;
-      loginBtn.textContent = "Sign In";
-      return;
-    }
-
-    // Save token and email
     chrome.storage.local.set({
-      pp_token: data.access_token,
-      pp_email: data.email || email,
+      pp_token: json.access_token,
+      pp_email: json.email || email,
       pp_base_url: BASE_URL,
       pp_mode: "professional"
-    }, () => {
-      console.log("PromptPilot: Token saved successfully!");
-      showLoggedIn(data.email || email);
-    });
-
-  } catch (err) {
-    showError("Connection error. Is the extension online?");
-    loginBtn.disabled = false;
-    loginBtn.textContent = "Sign In";
+    }, () => showConnected(json.email || email));
+  } catch (e) {
+    errEl.textContent = e.message;
+    errEl.style.display = "block";
+    btnEl.disabled = false;
+    btnEl.textContent = "Sign In";
   }
+}
+
+document.getElementById("btn-manual-login").addEventListener("click", () => {
+  doLogin(
+    document.getElementById("em").value.trim(),
+    document.getElementById("pw").value.trim(),
+    document.getElementById("err-nosite"),
+    document.getElementById("btn-manual-login")
+  );
 });
 
-// Allow pressing Enter to login
-passwordInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") loginBtn.click();
-});
-emailInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") passwordInput.focus();
-});
-
-// Mode selection
-document.querySelectorAll(".mode-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    chrome.storage.local.set({ pp_mode: btn.dataset.mode });
-  });
+document.getElementById("btn-login2")?.addEventListener("click", () => {
+  doLogin(
+    document.getElementById("em2").value.trim(),
+    document.getElementById("pw2").value.trim(),
+    document.getElementById("err-login"),
+    document.getElementById("btn-login2")
+  );
 });
 
-// Logout
-logoutBtn.addEventListener("click", () => {
-  chrome.storage.local.remove(["pp_token", "pp_email", "pp_mode", "pp_base_url"], () => {
-    showLoginForm();
+// Enter key support
+["pw", "pw2"].forEach(id => {
+  document.getElementById(id)?.addEventListener("keydown", e => {
+    if (e.key === "Enter") document.getElementById(id === "pw" ? "btn-manual-login" : "btn-login2")?.click();
   });
 });

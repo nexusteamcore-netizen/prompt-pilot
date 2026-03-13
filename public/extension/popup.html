@@ -1,210 +1,146 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
   <title>PromptPilot</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      width: 320px;
+      width: 300px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: #0c0c0c;
       color: #e5e5e5;
-      min-height: 200px;
     }
-
-    .container { padding: 20px; }
-
+    .wrap { padding: 18px; }
     .header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 20px;
-      padding-bottom: 16px;
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 18px; padding-bottom: 14px;
       border-bottom: 1px solid #1f1f1f;
     }
-
     .logo {
-      width: 32px;
-      height: 32px;
-      background: #1a1a1a;
-      border: 1px solid #2a2a2a;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      width: 30px; height: 30px; border-radius: 8px;
+      background: #1a1a1a; border: 1px solid #2a2a2a;
+      display: flex; align-items: center; justify-content: center;
     }
+    h1 { font-size: 14px; font-weight: 600; color: #f5f5f4; }
+    .sub { font-size: 11px; color: #57534e; }
 
-    .header h1 { font-size: 15px; font-weight: 600; color: #f5f5f4; }
-    .header span { font-size: 11px; color: #57534e; }
-
-    /* Login Form */
-    #login-section input {
-      width: 100%;
-      background: #1a1a1a;
-      border: 1px solid #2a2a2a;
-      border-radius: 10px;
-      padding: 10px 12px;
-      color: #e5e5e5;
-      font-size: 13px;
-      margin-bottom: 8px;
-      outline: none;
-      transition: border-color 0.2s;
+    /* Status cards */
+    .status-ok {
+      display: flex; align-items: center; gap: 8px;
+      background: #0d1f13; border: 1px solid #14532d;
+      border-radius: 10px; padding: 10px 14px; margin-bottom: 14px;
+      font-size: 12px; color: #86efac;
     }
-    #login-section input:focus { border-color: #44403c; }
-    #login-section input::placeholder { color: #57534e; }
-
-    .btn-primary {
-      width: 100%;
-      background: #f5f5f4;
-      color: #0c0c0c;
-      border: none;
-      border-radius: 10px;
-      padding: 10px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 4px;
-      transition: background 0.2s, transform 0.1s;
+    .status-warn {
+      display: flex; align-items: center; gap: 8px;
+      background: #1c1400; border: 1px solid #713f12;
+      border-radius: 10px; padding: 10px 14px; margin-bottom: 14px;
+      font-size: 12px; color: #fcd34d;
     }
-    .btn-primary:hover { background: #fff; }
-    .btn-primary:active { transform: scale(0.98); }
-    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .dot-green { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+    .dot-yellow { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
 
-    /* Logged In Section */
-    #logged-in-section { display: none; }
+    .email { font-size: 11px; color: #78716c; margin-bottom: 14px; }
 
-    .status-badge {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: #0d1f13;
-      border: 1px solid #14532d;
-      border-radius: 10px;
-      padding: 10px 14px;
-      margin-bottom: 16px;
-      font-size: 12px;
-      color: #86efac;
-    }
-
-    .dot-green {
-      width: 7px; height: 7px;
-      background: #22c55e;
-      border-radius: 50%;
-      box-shadow: 0 0 6px #22c55e;
-      flex-shrink: 0;
-    }
-
-    .user-email {
-      font-size: 11px;
-      color: #78716c;
-      text-align: center;
-      margin-bottom: 14px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    /* Mode selector */
-    .mode-label {
-      font-size: 11px;
-      color: #78716c;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin-bottom: 8px;
-    }
-
-    .mode-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-      margin-bottom: 16px;
-    }
-
+    /* Mode grid */
+    .mode-label { font-size: 10px; color: #57534e; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 8px; }
+    .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 14px; }
     .mode-btn {
-      background: #1a1a1a;
-      border: 1px solid #2a2a2a;
-      border-radius: 8px;
-      padding: 8px;
-      font-size: 12px;
-      color: #a8a29e;
-      cursor: pointer;
-      transition: all 0.15s;
-      text-align: center;
+      background: #1a1a1a; border: 1px solid #2a2a2a;
+      border-radius: 8px; padding: 7px; font-size: 12px;
+      color: #a8a29e; cursor: pointer; text-align: center; transition: all .15s;
     }
-
     .mode-btn:hover { border-color: #44403c; color: #e5e5e5; }
-    .mode-btn.active {
-      background: #1c1917;
-      border-color: #57534e;
-      color: #f5f5f4;
-      font-weight: 600;
-    }
+    .mode-btn.active { background: #1c1917; border-color: #57534e; color: #f5f5f4; font-weight: 600; }
 
-    .btn-logout {
-      width: 100%;
-      background: transparent;
-      border: 1px solid #1f1f1f;
-      border-radius: 10px;
-      padding: 8px;
-      font-size: 12px;
-      color: #57534e;
-      cursor: pointer;
-      transition: all 0.15s;
+    /* Buttons */
+    .btn {
+      width: 100%; border: none; border-radius: 10px; padding: 9px;
+      font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s;
     }
-    .btn-logout:hover { border-color: #ef4444; color: #ef4444; }
+    .btn-primary { background: #f5f5f4; color: #0c0c0c; margin-bottom: 6px; }
+    .btn-primary:hover { background: #fff; }
+    .btn-secondary { background: transparent; border: 1px solid #1f1f1f; color: #57534e; }
+    .btn-secondary:hover { border-color: #ef4444; color: #ef4444; }
+    .btn:active { transform: scale(.98); }
 
-    .error-msg {
-      color: #f87171;
-      font-size: 12px;
-      text-align: center;
-      margin-top: 8px;
-      display: none;
+    /* Login form */
+    .form input {
+      width: 100%; background: #1a1a1a; border: 1px solid #2a2a2a;
+      border-radius: 9px; padding: 9px 12px; color: #e5e5e5;
+      font-size: 12px; margin-bottom: 7px; outline: none;
     }
+    .form input:focus { border-color: #44403c; }
+    .form input::placeholder { color: #57534e; }
+    .err { color: #f87171; font-size: 11px; margin-top: 6px; display: none; }
+
+    /* Sections */
+    #s-loading, #s-connected, #s-nosite, #s-login { display: none; }
+    .spinner {
+      border: 2px solid #2a2a2a; border-top-color: #f5f5f4;
+      border-radius: 50%; width: 18px; height: 18px;
+      animation: spin .7s linear infinite; margin: 20px auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <div class="logo">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f5f5f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2C12 2 17 8 17 13C17 18 12 21 12 21C12 21 7 18 7 13C7 8 12 2 12 2Z"/>
-          <path d="M12 8V13"/>
-        </svg>
-      </div>
-      <div>
-        <h1>PromptPilot</h1>
-        <span>AI Prompt Enhancer</span>
-      </div>
+<div class="wrap">
+  <div class="header">
+    <div class="logo">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f5f5f4" stroke-width="2.2">
+        <path d="M12 2C12 2 17 8 17 13C17 18 12 21 12 21C12 21 7 18 7 13C7 8 12 2 12 2Z"/>
+        <path d="M12 8V13"/>
+      </svg>
     </div>
+    <div><h1>PromptPilot</h1><div class="sub">AI Prompt Enhancer</div></div>
+  </div>
 
-    <!-- Login Section -->
-    <div id="login-section">
-      <input type="email" id="email-input" placeholder="Email address" autocomplete="email" />
-      <input type="password" id="password-input" placeholder="Password" autocomplete="current-password" />
-      <button class="btn-primary" id="login-btn">Sign In</button>
-      <div class="error-msg" id="error-msg"></div>
+  <!-- Loading -->
+  <div id="s-loading"><div class="spinner"></div></div>
+
+  <!-- Connected -->
+  <div id="s-connected">
+    <div class="status-ok"><div class="dot dot-green"></div> Active — Ready to enhance</div>
+    <div class="email" id="disp-email"></div>
+    <div class="mode-label">Mode</div>
+    <div class="modes">
+      <button class="mode-btn active" data-mode="professional">Professional</button>
+      <button class="mode-btn" data-mode="creative">Creative</button>
+      <button class="mode-btn" data-mode="technical">Technical</button>
+      <button class="mode-btn" data-mode="concise">Concise</button>
     </div>
+    <button class="btn btn-secondary" id="btn-logout">Sign Out</button>
+  </div>
 
-    <!-- Logged In Section -->
-    <div id="logged-in-section">
-      <div class="status-badge">
-        <div class="dot-green"></div>
-        Active — Ready to enhance
-      </div>
-      <div class="user-email" id="user-email-display"></div>
-      <div class="mode-label">Enhancement Mode</div>
-      <div class="mode-grid">
-        <button class="mode-btn active" data-mode="professional">Professional</button>
-        <button class="mode-btn" data-mode="creative">Creative</button>
-        <button class="mode-btn" data-mode="technical">Technical</button>
-        <button class="mode-btn" data-mode="concise">Concise</button>
-      </div>
-      <button class="btn-logout" id="logout-btn">Sign Out</button>
+  <!-- Site not open but maybe can open it -->
+  <div id="s-nosite">
+    <div class="status-warn"><div class="dot dot-yellow"></div> Website not open</div>
+    <p style="font-size:12px;color:#78716c;margin-bottom:14px;line-height:1.5">
+      Open the PromptPilot website and sign in, then come back here.
+    </p>
+    <button class="btn btn-primary" id="btn-open-site">Open Website</button>
+    <div style="text-align:center;color:#57534e;font-size:11px;margin:10px 0">— or sign in manually —</div>
+    <div class="form">
+      <input type="email" id="em" placeholder="Email"/>
+      <input type="password" id="pw" placeholder="Password"/>
+      <button class="btn btn-primary" id="btn-manual-login">Sign In</button>
+      <div class="err" id="err-nosite"></div>
     </div>
   </div>
 
-  <script src="popup.js"></script>
+  <!-- Saved login form (fallback) -->
+  <div id="s-login">
+    <div class="form">
+      <input type="email" id="em2" placeholder="Email"/>
+      <input type="password" id="pw2" placeholder="Password"/>
+      <button class="btn btn-primary" id="btn-login2">Sign In</button>
+      <div class="err" id="err-login"></div>
+    </div>
+  </div>
+</div>
+<script src="popup.js"></script>
 </body>
 </html>

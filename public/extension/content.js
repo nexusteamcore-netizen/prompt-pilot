@@ -164,32 +164,69 @@ function injectText(text) {
     }
 }
 
-function showFeedback(text, color) {
+function showFeedback(text, type = "info") {
     const existing = document.getElementById("pp-feedback-pop");
     if (existing) existing.remove();
 
     const pop = document.createElement("div");
     pop.id = "pp-feedback-pop";
     pop.className = "pp-feedback-pop";
+
+    let iconSvg = '';
+    let iconColor = '';
+    
+    if (type === "loading") {
+        iconColor = "#3b82f6";
+        iconSvg = `<svg class="pp-toast-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>`;
+    } else if (type === "success") {
+        iconColor = "#10b981";
+        iconSvg = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+    } else if (type === "error") {
+        iconColor = "#ef4444";
+        iconSvg = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`;
+    } else {
+        iconColor = "#f5f5f5";
+        iconSvg = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`;
+    }
+
+    pop.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: ${iconColor}20; flex-shrink: 0;">
+            ${iconSvg}
+        </div>
+        <span style="letter-spacing: 0.2px; font-weight: 500;">${text}</span>
+    `;
+
     pop.style.cssText = `
         position: fixed;
         bottom: 140px;
         right: 24px;
-        background: ${color};
-        color: white;
-        font-size: 12px;
-        font-weight: 600;
-        padding: 8px 14px;
-        border-radius: 20px;
+        background: rgba(18, 18, 18, 0.95);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: #f5f5f4;
+        font-size: 13.5px;
+        padding: 10px 18px 10px 10px;
+        border-radius: 999px;
         z-index: 999999;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        max-width: 260px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        animation: ppFadeIn 0.2s ease;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.24), 0 2px 8px rgba(0, 0, 0, 0.12);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        animation: ppToastEnter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        transform-origin: bottom right;
+        pointer-events: none;
     `;
-    pop.textContent = text;
+
     document.body.appendChild(pop);
-    setTimeout(() => pop.remove(), 3500);
+    
+    setTimeout(() => {
+        if (pop) {
+            pop.style.animation = 'ppToastExit 0.3s cubic-bezier(0.7, 0, 0.84, 0) forwards';
+            setTimeout(() => pop.remove(), 300);
+        }
+    }, 4000);
 }
 
 function resetBadge() {
@@ -218,7 +255,6 @@ document.addEventListener("focusin", (e) => {
 
 // Hide badge when focus moves away from inputs
 document.addEventListener("focusout", (e) => {
-    // Small delay to allow click on badge itself
     setTimeout(() => {
         const focused = document.activeElement;
         if (!focused || (!focused.closest(inputSelectors) && focused.id !== "pp-badge")) {
@@ -227,7 +263,7 @@ document.addEventListener("focusout", (e) => {
     }, 200);
 }, true);
 
-// Also hide when clicking anywhere EXCEPT on an input or the badge
+// Hide when clicking outside
 document.addEventListener("click", (e) => {
     if (e.target === ppBadge || ppBadge?.contains(e.target)) return;
     const onInput = e.target.closest(inputSelectors);
@@ -236,9 +272,24 @@ document.addEventListener("click", (e) => {
     }
 }, true);
 
-// Inject keyframe animation
+// Premium generic animations
 const style = document.createElement("style");
-style.textContent = `@keyframes ppFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }`;
+style.textContent = `
+    @keyframes ppToastEnter {
+        0% { opacity: 0; transform: translateY(24px) scale(0.9); }
+        100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes ppToastExit {
+        0% { opacity: 1; transform: translateY(0) scale(1); }
+        100% { opacity: 0; transform: translateY(12px) scale(0.95); }
+    }
+    @keyframes ppSpinAnim {
+        100% { transform: rotate(360deg); }
+    }
+    .pp-toast-spin {
+        animation: ppSpinAnim 1.2s linear infinite;
+    }
+`;
 document.head.appendChild(style);
 
 createBadge();

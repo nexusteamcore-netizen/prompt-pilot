@@ -103,7 +103,6 @@ function createBadge() {
             resetBadge();
         });
     });
-});
 
     // Drag support
     ppBadge.addEventListener("mousedown", (e) => {

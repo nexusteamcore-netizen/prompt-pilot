@@ -199,7 +199,7 @@ export default function DashboardHome() {
               >
                 <div className="flex justify-between items-center mb-4">
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
+                    <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
                     <span className="text-[10px] font-bold text-stone-500 uppercase tracking-[0.2em]">Crafted Result</span>
                   </div>
                   <button

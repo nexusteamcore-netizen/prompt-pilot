@@ -68,7 +68,7 @@ export default function BillingPage() {
             <div className="flex items-center gap-4">
               <span className="px-4 py-1.5 bg-stone-800/80 border border-stone-700/50 text-stone-200 rounded-lg text-sm font-semibold shadow-sm">Free Tier</span>
               <span className="text-sm text-stone-400 font-medium flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]"></span>
                 20 transforms / month
               </span>
             </div>

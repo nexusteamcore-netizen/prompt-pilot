@@ -335,7 +335,7 @@ Whenever a user submits a request, rewrite it into a **professional structured p
         ],
         temperature: 0.4,
         top_p: 0.85,
-        max_tokens: 550
+        max_tokens: 1500 // Increased to prevent truncation of long structured prompts
       })
     });
 

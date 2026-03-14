@@ -100,10 +100,10 @@ export default function LoginPage() {
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6 text-center"
+              className="bg-stone-800/30 border border-stone-800/50 rounded-2xl p-6 text-center"
             >
-              <div className="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+              <div className="w-12 h-12 bg-stone-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="w-6 h-6 text-stone-100" />
               </div>
               <h3 className="text-stone-100 font-medium mb-2">Check your email</h3>
               <p className="text-sm text-stone-400 mb-6">

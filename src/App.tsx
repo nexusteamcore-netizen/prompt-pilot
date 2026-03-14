@@ -20,7 +20,20 @@ export default function App() {
   return (
     <AuthProvider>
       <Router>
-        <Toaster theme="dark" position="bottom-right" richColors expand={true} />
+        <Toaster 
+          theme="dark" 
+          position="bottom-right" 
+          expand={true}
+          toastOptions={{
+            style: {
+              background: '#1c1917', // stone-900
+              border: '1px solid #292524', // stone-800
+              color: '#f5f5f4', // stone-100
+              borderRadius: '12px',
+            },
+            className: 'font-sans',
+          }}
+        />
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />

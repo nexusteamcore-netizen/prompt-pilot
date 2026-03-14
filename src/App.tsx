@@ -20,7 +20,7 @@ export default function App() {
   return (
     <AuthProvider>
       <Router>
-        <Toaster theme="dark" position="bottom-right" />
+        <Toaster theme="dark" position="bottom-right" richColors expand={true} />
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />

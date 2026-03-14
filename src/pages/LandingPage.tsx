@@ -159,8 +159,8 @@ export default function LandingPage() {
               <ArrowRight className="w-4 h-4" />
             </button>
             <button 
-              onClick={() => toast.success("Coming soon! 🚀", {
-                description: "We are currently working on a high-quality demo video."
+              onClick={() => toast("Coming soon! 🚀", {
+                description: "We are currently working on a high-quality demo video.",
               })}
               className="w-full sm:w-auto px-8 py-3 bg-stone-900 text-stone-300 font-medium rounded-lg border border-stone-800 hover:bg-stone-800 hover:text-stone-100 transition-colors flex items-center justify-center gap-2 group active:scale-95"
             >

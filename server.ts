@@ -1,4 +1,5 @@
 console.log(">>> SERVER SCRIPT STARTED <<<");
+import "dotenv/config";
 import express from "express";
 import Stripe from "stripe";
 import jwt from "jsonwebtoken";
@@ -303,7 +304,9 @@ Whenever a user submits a request, rewrite it into a **professional structured p
   - If the user says: "write code to build luxury landing page", your output's OBJECTIVE should be: "Generate a complete, production-ready landing page..."
   - NEVER say: "Your objective is to write a prompt for a landing page."`;
 
-    console.time(`transform-${userId}`);
+    const requestId = Math.random().toString(36).substring(7);
+    console.time(`transform-${userId}-${requestId}`);
+    const timeLabel = `transform-${userId}-${requestId}`;
 
     // ⚡ Start DB checks in background — don't wait before firing AI
     const supabase = getSupabaseClient(authHeader);
@@ -398,7 +401,7 @@ Whenever a user submits a request, rewrite it into a **professional structured p
 
     // Fire and forget — don't block the response
     Promise.all([upsertUsage, saveHistory]).catch(e => console.warn("Background DB write failed:", e));
-    console.timeEnd(`transform-${userId}`);
+    console.timeEnd(timeLabel);
 
     res.json({
       transformed,
